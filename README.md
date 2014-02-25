@@ -13,7 +13,7 @@ FormationTortue
 * `rqt_console` Affiche les loginfo sur rosout
 * `roslaunch turtlebot_bringup minimal.launch` Démarre le master node
 * `rosrun image_view disparity_view image:=/camera/depth/disparity` Affiche la vue colorisée kinect
-* `rosrun openni_launch openni.launch` Démarre le noeud kinect
+* `roslaunch openni_launch openni.launch` Démarre le noeud kinect
 * `rosrun turtlesim turtlesim_node`
 * `rosrun turtlesim turtle_teleop_key`
 
