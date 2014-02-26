@@ -5,6 +5,12 @@ from cv_bridge import CvBridge, CvBridgeError
 
 NB_ROBOTS = 1
 
+hsv_colors = {
+    'yellow': {'min' : cv.Scalar(25, 100, 100), 'max' : cv.Scalar(35, 255, 255)},
+    'pink': {'min' : cv.Scalar(150, 50, 50), 'max' : cv.Scalar(175, 255, 255)},
+    'red': {'min' : cv.Scalar(0, 100, 100), 'max' : cv.Scalar(10, 255, 255)},
+    'green': {'min' : cv.Scalar(55, 50, 50), 'max' : cv.Scalar(65, 255, 255)}
+}
 
 def convertRGB2HSV(imgrgb):
     '''this function take RGB image, then convert it into HSV'''
@@ -14,14 +20,16 @@ def convertRGB2HSV(imgrgb):
 
 
 def getthresholdedimg(imghsv, color):
-    '''this function take HSV image.Then threshold it with yellow and blue part as
+    '''this function take HSV image.Then threshold it with color part as
     white and all other regions as black.Then return that image'''
 
-    # Creates images for blue and yellow (or whatever color you like).
+    # Creates images
     imgthreshold = cv.CreateImage(cv.GetSize(imghsv), 8, 1)
 
-    # Select a range of yellow color
-    cv.InRangeS(imghsv, cv.Scalar(20, 100, 100), cv.Scalar(30, 255, 255), imgthreshold)
+    # Select a range of color
+    cv.InRangeS(imghsv, hsv_colors[color]['min'],
+                        hsv_colors[color]['max'],
+                        imgthreshold)
     return imgthreshold
 
 
