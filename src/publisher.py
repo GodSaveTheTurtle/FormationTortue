@@ -12,7 +12,11 @@ from controller import DirectionalKeyListener
 class ThreadedPublisher(object):
 
     def __init__(self, topic, type, frequency=1):
-        self._pub = rospy.Publisher(topic, type)
+        if topic and type:
+            self._pub = rospy.Publisher(topic, type)
+        else:
+            self.pub = None
+
         self._thread = Thread(target=self.loop)
         self._frequency = frequency
         self._running = False
@@ -36,8 +40,9 @@ class ThreadedPublisher(object):
         return self
 
     def publish(self, *args):
-        # rospy.loginfo(*args)
-        self._pub.publish(*args)
+        if self._pub:
+            rospy.loginfo(*args)
+            self._pub.publish(*args)
 
     def join(self):
         self._thread.join()
