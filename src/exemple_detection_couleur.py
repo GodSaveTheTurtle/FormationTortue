@@ -32,6 +32,7 @@ def find_robots(current_cv_frame):
 
     cv.NamedWindow("Real", 0)
     cv.NamedWindow("Threshold", 0)
+    cv.NamedWindow("Final", 0)
 
     for i in range(NB_ROBOTS):
         imgdraw = cv.CreateImage(frame_size, 8, 3)
@@ -39,7 +40,7 @@ def find_robots(current_cv_frame):
         cv.Flip(current_cv_frame, current_cv_frame, 1)
         cv.Smooth(current_cv_frame, current_cv_frame, cv.CV_GAUSSIAN, 3, 0)
         imghsv = convertRGB2HSV(current_cv_frame)
-        imgthresh = getthresholdedimg(imghsv)
+        imgthresh = getthresholdedimg(imghsv, "yellow")
         cv.Erode(imgthresh, imgthresh, None, 3)
         cv.Dilate(imgthresh, imgthresh, None, 10)
         imgDrawTresh = cv.CloneImage(imgthresh)
@@ -82,15 +83,18 @@ def find_robots(current_cv_frame):
         except IndexError:
             print "Wait for Yellow"
 
-        cv.ShowImage("Real cv frame", current_cv_frame)
+        cv.ShowImage("Real", current_cv_frame)
         cv.ShowImage("Threshold", imgDrawTresh)
-        cv.ShowImage("final", imgdraw)
+        cv.ShowImage("Final", imgdraw)
+        cv.WaitKey(1)
 
 
 def callback_kinect(data):
-    print 'kinect callback !'
-    #rospy.loginfo(rospy.get_name() + ": I heard %s" % data.data)
-    cv_image = bridge.imgmsg_to_cv(data.data)
+    bridge = CvBridge()
+    try:
+        cv_image = bridge.imgmsg_to_cv(data, "bgr8")
+    except CvBridgeError, e:
+        print e
     find_robots(cv_image)
 
 
