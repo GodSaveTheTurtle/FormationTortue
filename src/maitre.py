@@ -24,7 +24,9 @@ class MainThread(ThreadedPublisher):
         ''' Replace this thread's loop with the listener's activation '''
         if self.commands['next_state']:
             if self.state:
+                print 'Quitting state', type(self.state).__name__
                 self.state.end(self.commands)
+            print 'Entering state', self.commands['next_state'].__name__
             self.state = self.commands['next_state'](self.commands)
 
         self.state.update(self.commands)
@@ -55,9 +57,14 @@ class NetworkThread(ThreadedPublisher):
         ''' Replace this thread's loop with a blocking wait on the socket '''
         while self._running and not rospy.is_shutdown():
             data = self.s.recv(1024).split(" ")
-            lin, ang = [int(i) for i in data]
-            self.commands['in_linear_spd'] = lin
-            self.commands['in_angular_spd'] = ang
+            if data[0] == 'd':  # Direction command
+                lin, ang = [int(i) for i in data[1:]]
+                self.commands['in_linear_spd'] = lin
+                self.commands['in_angular_spd'] = ang
+            elif data[0] == 's':
+                self.commands['visible_slaves'] += int(data[1])
+            elif data[0] == 'o':
+                self.commands['has_obstacle'] = not self.commands['has_obstacle']
 
     def terminate(self):
         super(NetworkThread, self).terminate()
@@ -70,17 +77,17 @@ class NetworkThread(ThreadedPublisher):
 
 if __name__ == '__main__':
 
-    # Dictionary that holds the 'global' variables
+    # Dictionary that holds the 'global' variables and configuration
     commands = {
-        'nb_slaves': 0,
-        'visible_slaves': 0,
-        'linear_spd': 0,
-        'angular_spd': 0,
-        'in_linear_spd': 0,
-        'in_angular_spd': 0,
-        'has_obstacle': False,
-        'lost_slave_found': False,
-        'next_state': state.RemoteControlled
+        'nb_slaves': 0,  # number of slaves in the formation
+        'visible_slaves': 0,  # When != to nb_slaves, the master enters Search state
+        'linear_spd': 0,  # linear speed of the robot, after transformation according to the state
+        'angular_spd': 0,  # angular speed of the robot, after transformation according to the state
+        'in_linear_spd': 0,  # linear speed instruction recieved from the remote controller
+        'in_angular_spd': 0,  # linear speed instruction recieved from the remote controller
+        'has_obstacle': False,  # should become True when a slave notices an obstacle
+        'lost_slave_found': False,  # flag that commands the transition from Search to Escort state
+        'next_state': state.RemoteControlled  # That state will be applied at the next iteration
     }
 
     try:

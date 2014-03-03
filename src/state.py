@@ -2,7 +2,7 @@ class State(object):
 
     def __init__(self, commands):
         ''' Constructior, do stuff required when entering that state '''
-        commands['state'] = None
+        commands['next_state'] = None
         pass
 
     def update(self, commands):
@@ -15,6 +15,9 @@ class State(object):
 
 
 class RemoteControlled(State):
+    LIN_SPEED_MULT = 1/50.0  # Multiplier for the linear speed (input is bewteen -100 and +100)
+    ANG_SPEED_MULT = 1/20.0  # Multiplier for the angular speed (input is bewteen -100 and +100)
+
     def __init__(self, commands):
         super(RemoteControlled, self).__init__(commands)
         # TODO send something to the android client to display the joysticks
@@ -28,8 +31,8 @@ class RemoteControlled(State):
         elif commands['visible_slaves'] != commands['nb_slaves']:
             commands['next_state'] = Search
         else:
-            commands['linear_spd'] = commands['in_linear_spd']
-            commands['angular_spd'] = commands['in_angular_spd']
+            commands['linear_spd'] = commands['in_linear_spd'] * RemoteControlled.LIN_SPEED_MULT
+            commands['angular_spd'] = commands['in_angular_spd'] * RemoteControlled.ANG_SPEED_MULT
 
 
 class Obstacle(State):
@@ -59,7 +62,8 @@ class Search(State):
         self.remaining_search_time += 1
 
         if self.remaining_search_time <= 0:
-            commands['next_state'] = RemoteControlled  # TODO: do something to avoid directly getting back to search
+            commands['nb_slaves'] -= 1  # a slave has successfully escaped
+            commands['next_state'] = RemoteControlled
         elif commands['lost_slave_found']:
             commands['next_state'] = Escort
         else:

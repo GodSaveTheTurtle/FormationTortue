@@ -30,7 +30,7 @@ class ThreadedPublisher(object):
         pass
 
     def terminate(self):
-        print 'terminating ', type(self)
+        print 'Terminating ', type(self).__name__
         self._running = False
 
     def start(self):
@@ -41,7 +41,7 @@ class ThreadedPublisher(object):
 
     def publish(self, *args):
         if self._pub:
-            rospy.loginfo(*args)
+            # rospy.loginfo(*args)
             self._pub.publish(*args)
 
     def join(self):
