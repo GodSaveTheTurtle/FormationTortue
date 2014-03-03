@@ -16,7 +16,7 @@ class State(object):
 
 class RemoteControlled(State):
     def __init__(self, commands):
-        super(RemoteControlled, self).init(commands)
+        super(RemoteControlled, self).__init__(commands)
         # TODO send something to the android client to display the joysticks
 
     def update(self, commands):
@@ -27,12 +27,15 @@ class RemoteControlled(State):
             commands['next_state'] = Obstacle
         elif commands['visible_slaves'] != commands['nb_slaves']:
             commands['next_state'] = Search
+        else:
+            commands['linear_spd'] = commands['in_linear_spd']
+            commands['angular_spd'] = commands['in_angular_spd']
 
 
 class Obstacle(State):
     ''' Currently only stops the robot while there is a detected obstacle '''
     def __init__(self, commands):
-        super(Obstacle, self).init(commands)
+        super(Obstacle, self).__init__(commands)
         # TODO stop slaves, send something to the android client
 
     def update(self, commands):
@@ -47,7 +50,7 @@ class Obstacle(State):
 
 class Search(State):
     def __init__(self, commands):
-        super(Search, self).init(commands)
+        super(Search, self).__init__(commands)
         # TODO stop slaves, send something to the android client
         self.remaining_search_time = 10 * 600  # in 10th of seconds. This is 5 minutes
 
@@ -66,7 +69,7 @@ class Search(State):
 
 class Escort(State):
     def __init__(self, commands):
-        super(Escort, self).init(commands)
+        super(Escort, self).__init__(commands)
         # TODO send something to the android client
 
     def update(self, commands):

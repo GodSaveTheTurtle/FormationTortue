@@ -42,23 +42,29 @@ class NetworkThread(ThreadedPublisher):
         super(NetworkThread, self).__init__(None, None)
         self.commands = commands
         self.s = None
+        self.hostname = '0.0.0.0'
+        self.port = 1337
 
     def start(self):
         self.s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         # self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.s.bind(('0.0.0.0', 1337))
-        super(NetworkThread, self).start()
+        self.s.bind((self.hostname, self.port))
+        return super(NetworkThread, self).start()
 
     def loop(self):
         ''' Replace this thread's loop with a blocking wait on the socket '''
         while self._running and not rospy.is_shutdown():
             data = self.s.recv(1024).split(" ")
             lin, ang = [int(i) for i in data]
-            self.commands['linear_spd'] = lin/100.0
-            self.commands['angular_spd'] = ang/10.0
+            self.commands['in_linear_spd'] = lin
+            self.commands['in_angular_spd'] = ang
 
     def terminate(self):
         super(NetworkThread, self).terminate()
+        # Need to send something to stop the waiting loop
+        tmp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        tmp_socket.sendto('0 0', (self.hostname, self.port))
+        tmp_socket.close()
         self.s.close()
 
 
@@ -66,11 +72,14 @@ if __name__ == '__main__':
 
     # Dictionary that holds the 'global' variables
     commands = {
-        'nb_slaves': 2,
+        'nb_slaves': 0,
         'visible_slaves': 0,
         'linear_spd': 0,
         'angular_spd': 0,
+        'in_linear_spd': 0,
+        'in_angular_spd': 0,
         'has_obstacle': False,
+        'lost_slave_found': False,
         'next_state': state.RemoteControlled
     }
 
@@ -83,7 +92,7 @@ if __name__ == '__main__':
         rospy.spin()  # waits until rospy.is_shutdown() is true (Ctrl+C)
 
         print '\nTerminating the publishers...'
-        for thread in (direction, network):
+        for thread in (network, direction):
             thread.terminate()
             thread.join()
 

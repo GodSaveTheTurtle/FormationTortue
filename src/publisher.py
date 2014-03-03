@@ -15,7 +15,7 @@ class ThreadedPublisher(object):
         if topic and type:
             self._pub = rospy.Publisher(topic, type)
         else:
-            self.pub = None
+            self._pub = None
 
         self._thread = Thread(target=self.loop)
         self._frequency = frequency
@@ -30,7 +30,7 @@ class ThreadedPublisher(object):
         pass
 
     def terminate(self):
-        print 'terminating '
+        print 'terminating ', type(self)
         self._running = False
 
     def start(self):
