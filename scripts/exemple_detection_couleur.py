@@ -3,14 +3,19 @@ import cv
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 
-NB_ROBOTS = 1
+NB_ROBOTS = 2
 
 hsv_colors = {
-    'yellow': {'min' : cv.Scalar(25, 100, 100), 'max' : cv.Scalar(35, 255, 255)},
-    'pink': {'min' : cv.Scalar(150, 50, 50), 'max' : cv.Scalar(175, 255, 255)},
-    'red': {'min' : cv.Scalar(0, 100, 100), 'max' : cv.Scalar(10, 255, 255)},
-    'green': {'min' : cv.Scalar(55, 50, 50), 'max' : cv.Scalar(65, 255, 255)}
+    'yellow': {'min': cv.Scalar(20, 100, 100), 'max': cv.Scalar(40, 255, 255)},
+    'pink': {'min': cv.Scalar(150, 50, 50), 'max': cv.Scalar(175, 255, 255)},
+    'red': {'min': cv.Scalar(0, 100, 100), 'max': cv.Scalar(10, 255, 255)},
+    'green': {'min': cv.Scalar(55, 50, 50), 'max': cv.Scalar(65, 255, 255)}
 }
+
+param_robots = [
+	{'color': 'yellow', 'pos_x': 0},
+	{'color': 'red', 'pos_x': 0}
+]
 
 def convertRGB2HSV(imgrgb):
     '''this function take RGB image, then convert it into HSV'''
@@ -28,18 +33,15 @@ def getthresholdedimg(imghsv, color):
 
     # Select a range of color
     cv.InRangeS(imghsv, hsv_colors[color]['min'],
-                        hsv_colors[color]['max'],
-                        imgthreshold)
+						hsv_colors[color]['max'],
+						imgthreshold)
     return imgthreshold
 
 
 def find_robots(current_cv_frame):
     frame_size = cv.GetSize(current_cv_frame)
 
-    imgDrawTresh = cv.CreateImage(frame_size, 8, 3)
-
     cv.NamedWindow("Real", 0)
-    cv.NamedWindow("Threshold", 0)
     cv.NamedWindow("Final", 0)
 
     for i in range(NB_ROBOTS):
@@ -47,23 +49,22 @@ def find_robots(current_cv_frame):
         cv.SetZero(imgdraw)
         cv.Flip(current_cv_frame, current_cv_frame, 1)
         cv.Smooth(current_cv_frame, current_cv_frame, cv.CV_GAUSSIAN, 3, 0)
+
         imghsv = convertRGB2HSV(current_cv_frame)
-        imgthresh = getthresholdedimg(imghsv, "yellow")
+        imgthresh = getthresholdedimg(imghsv, param_robots[i]['color'])
+
         cv.Erode(imgthresh, imgthresh, None, 3)
         cv.Dilate(imgthresh, imgthresh, None, 10)
-        imgDrawTresh = cv.CloneImage(imgthresh)
         storage = cv.CreateMemStorage(0)
         contour = cv.FindContours(imgthresh, storage, cv.CV_RETR_CCOMP, cv.CV_CHAIN_APPROX_SIMPLE)
 
         points = []
         centroids = []
 
-        # This is the new part here. ie Use of cv.BoundingRect()
         while contour:
             # Draw bounding rectangles
             bound_rect = cv.BoundingRect(list(contour))
             contour = contour.h_next()
-            print contour
             # for more details about cv.BoundingRect,see documentation
             pt1 = (bound_rect[0], bound_rect[1])
             pt2 = (bound_rect[0] + bound_rect[2], bound_rect[1] + bound_rect[3])
@@ -75,26 +76,15 @@ def find_robots(current_cv_frame):
 
             centroidx = cv.Round((pt1[0] + pt2[0]) / 2)
             centroidy = cv.Round((pt1[1] + pt2[1]) / 2)
+            centroids.append((centroidx, centroidy))
 
-            # Identifying if blue or yellow blobs and adding centroids to corresponding lists
-
-            if (20 < cv.Get2D(imghsv, centroidy, centroidx)[0] < 30):
-                centroids.append((centroidx, centroidy))
-
-        # Now drawing part. Exceptional handling is used to avoid IndexError.
-        # After drawing is over, centroid from previous part is # removed from
-        # list by pop. So in next frame,centroids in this frame become initial points of line to draw.
-        try:
-            cv.Circle(imgdraw, centroids[1], 5, (0, 255, 255))
-            cv.Line(imgdraw, centroids[0], centroids[1], (0, 255, 255), 3, 8, 0)
+            cv.Circle(imgdraw, centroids[0], 25, (0, 255, 255))
             centroids.pop(0)
-        except IndexError:
-            print "Wait for Yellow"
 
-        cv.ShowImage("Real", current_cv_frame)
-        cv.ShowImage("Threshold", imgDrawTresh)
-        cv.ShowImage("Final", imgdraw)
-        cv.WaitKey(1)
+
+    cv.ShowImage("Real", current_cv_frame)
+    cv.ShowImage("Final", imgdraw)
+    cv.WaitKey(1)
 
 
 def callback_kinect(data):
