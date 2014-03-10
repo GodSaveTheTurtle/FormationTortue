@@ -15,8 +15,8 @@ class State(object):
 
 
 class RemoteControlled(State):
-    LIN_SPEED_MULT = 1/50.0  # Multiplier for the linear speed (input is bewteen -100 and +100)
-    ANG_SPEED_MULT = 1/20.0  # Multiplier for the angular speed (input is bewteen -100 and +100)
+    LIN_SPEED_MULT = 1/75.0  # Multiplier for the linear speed (input is bewteen -100 and +100)
+    ANG_SPEED_MULT = 1/40.0  # Multiplier for the angular speed (input is bewteen -100 and +100)
 
     def __init__(self, commands):
         super(RemoteControlled, self).__init__(commands)

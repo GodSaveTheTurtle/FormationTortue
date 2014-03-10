@@ -77,6 +77,8 @@ class NetworkThread(ThreadedPublisher):
 
 if __name__ == '__main__':
 
+    simu_mode = rospy.get_param('~simu_mode') or False
+
     # Dictionary that holds the 'global' variables and configuration
     commands = {
         'nb_slaves': 0,  # number of slaves in the formation
@@ -87,13 +89,18 @@ if __name__ == '__main__':
         'in_angular_spd': 0,  # linear speed instruction recieved from the remote controller
         'has_obstacle': False,  # should become True when a slave notices an obstacle
         'lost_slave_found': False,  # flag that commands the transition from Search to Escort state
-        'next_state': state.RemoteControlled  # That state will be applied at the next iteration
+        'next_state': state.RemoteControlled,  # That state will be applied at the next iteration
+        'slaves': {
+            'yellow': {
+                'ip': '192.168.0.110',
+            }
+        }
     }
 
     try:
         rospy.init_node('maitre')
 
-        direction = MainThread(commands, True).start()
+        direction = MainThread(commands, simu_mode).start()
         network = NetworkThread(commands).start()
 
         rospy.spin()  # waits until rospy.is_shutdown() is true (Ctrl+C)
