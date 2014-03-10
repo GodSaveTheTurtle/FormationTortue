@@ -4,24 +4,27 @@ import rospy
 
 if __name__ == '__main__':
 
-    simu_mode = rospy.get_param('~simu_mode') or False
+    name = 'slave'
+    simu_mode = rospy.get_param('simu_mode', False)
 
     if simu_mode:
-        import roslib
-        roslib.load_manifest('formation')
-        # from geometry_msgs.msg import Spawn
         from turtlesim.srv import Spawn
+
+        # using rospy.get_name() as parameter for rospy.init_node() is not allowed
+        name = rospy.get_param(rospy.get_name() + '/name', name)
 
         rospy.wait_for_service('spawn')
         spawner = rospy.ServiceProxy('spawn', Spawn)
-        spawner(4, 2, 0, 'turtle2')
+        spawner(8, 5, 0, name)
 
         # TODO populate virtual slave data
 
     try:
-        rospy.init_node('esclave')
+        rospy.init_node(name)
 
-        # TODO etats
+        # TODO states
+
+        # TODO networking
 
         rospy.spin()  # waits until rospy.is_shutdown() is true (Ctrl+C)
 

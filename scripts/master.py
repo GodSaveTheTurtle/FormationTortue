@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import division
+
 import rospy
 import socket
 from publisher import ThreadedPublisher
@@ -77,9 +79,10 @@ class NetworkThread(ThreadedPublisher):
 
 if __name__ == '__main__':
 
-    simu_mode = rospy.get_param('~simu_mode') or False
+    simu_mode = rospy.get_param('simu_mode') or False
 
     # Dictionary that holds the 'global' variables and configuration
+    # TODO export as singleton somewhere?
     commands = {
         'nb_slaves': 0,  # number of slaves in the formation
         'visible_slaves': 0,  # When != to nb_slaves, the master enters Search state
@@ -98,7 +101,9 @@ if __name__ == '__main__':
     }
 
     try:
-        rospy.init_node('maitre')
+        rospy.init_node('turtle_alpha')
+
+        # TODO communication to slaves
 
         direction = MainThread(commands, simu_mode).start()
         network = NetworkThread(commands).start()
