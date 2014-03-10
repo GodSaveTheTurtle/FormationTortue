@@ -3,10 +3,10 @@ import cv
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 
-NB_ROBOTS = 1
+NB_ROBOTS = 2
 
 hsv_colors = {
-    'yellow': {'min': cv.Scalar(25, 100, 100), 'max': cv.Scalar(35, 255, 255)},
+    'yellow': {'min': cv.Scalar(20, 100, 100), 'max': cv.Scalar(40, 255, 255)},
     'pink': {'min': cv.Scalar(150, 50, 50), 'max': cv.Scalar(175, 255, 255)},
     'red': {'min': cv.Scalar(0, 100, 100), 'max': cv.Scalar(10, 255, 255)},
     'green': {'min': cv.Scalar(55, 50, 50), 'max': cv.Scalar(65, 255, 255)}
@@ -78,15 +78,9 @@ def find_robots(current_cv_frame):
             centroidy = cv.Round((pt1[1] + pt2[1]) / 2)
             centroids.append((centroidx, centroidy))
 
-        # Now drawing part. Exceptional handling is used to avoid IndexError.
-        # After drawing is over, centroid from previous part is # removed from
-        # list by pop. So in next frame,centroids in this frame become initial points of line to draw.
-		try:
-            cv.Circle(imgdraw, centroids[1], 25, (0, 255, 255))
-            cv.Line(imgdraw, centroids[0], centroids[1], (0, 255, 255), 3, 8, 0)
+            cv.Circle(imgdraw, centroids[0], 25, (0, 255, 255))
             centroids.pop(0)
-        except IndexError:
-            print "Wait for "+param_robots[i]['color']
+
 
     cv.ShowImage("Real", current_cv_frame)
     cv.ShowImage("Final", imgdraw)
