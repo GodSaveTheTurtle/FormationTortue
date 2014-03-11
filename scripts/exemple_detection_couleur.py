@@ -80,7 +80,7 @@ def find_robots(current_cv_frame):
             centroids.append((centroidx, centroidy))
 
             cv.Circle(imgdraw, centroids[0], 25, (0, 255, 255))
-            print 'couleur '+param_robots[i]['color']+' posx : '+centroidx
+            print 'couleur '+param_robots[i]['color']+' posx : '+str(centroidx)
             centroids.pop(0)
 
     cv.ShowImage("Real", current_cv_frame)
