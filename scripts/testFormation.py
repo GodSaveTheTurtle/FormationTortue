@@ -30,7 +30,7 @@ regulationActivated = True
 def robotFlowValuesAquire(dicoRobots):
 # Aquiert les donnees de position actuelles des robots de la kinnect
     for i in range(len(dicoRobots)):
-        dicoRobots[i]['teta'] = 0
+        dicoRobots[i]['teta'] = 2 * pi / 6
         dicoRobots[i]['D'] = 2
 
 
@@ -41,7 +41,7 @@ def robotCommandValuesCompute(dicoRobots):
         teta2 = dicoRobots[i]['teta']
         D1 = dicoRobots[i]['setDistance']
         D2 = dicoRobots[i]['D']
-        dicoRobots[i]['cap'] = atan((D2 * sin(teta2) - D1 * sin(teta1)) / (D2 * cos(teta2) - D1 * cos(teta1)))
+        dicoRobots[i]['cap'] = pi / 2 - atan((D2 * cos(teta2) - D1 * cos(teta1)) / (D2 * sin(teta2) - D1 * sin(teta1)))
         dicoRobots[i]['speed'] = hypot((D1 * cos(teta1) - D2 * cos(teta2)), (D1 * sin(teta1) - D2 * sin(teta2)))
 
 
@@ -56,14 +56,14 @@ def robotPositionDomainSet(dicoRobots):
     for i in range(int(len(dicoRobots)) + 1):
         tetaDotsDomain.append(i * tetaStep - 50)
     for i in range(len(dicoRobots)):
-        dicoRobots[i]['tetaSetPoint'] = radians((tetaDotsDomain[i] + tetaDotsDomain[i + 1]) / 2 )
+        dicoRobots[i]['tetaSetPoint'] = (tetaDotsDomain[i] + tetaDotsDomain[i + 1]) / 2
         dicoRobots[i]['setDistance'] = setDistance
         # ajout des domaines angles a respecter par chaque robot dans le dico
-    print('positionDomain:', dicoRobots)
+    #print('positionDomain:', dicoRobots)
 
 """def regulationMessagesFlow():# emet les consignes de cap et de vitesse a intervalles reguliers
     def __init__(self, target_sim=False):
-            if target_sim:
+            if target_sim:#
                     topic = '/turtle1/cmd_vel'
             else:
                     topic = '/cmd_vel_mux/input/teleop'
@@ -91,6 +91,6 @@ def main():
     # while regulationActivated:
     modeRegulation(dicoRobots)
         # regulationMessagesFlow(dicoRobots)
-    print(dicoRobots)
+    #print(dicoRobots)
 if __name__ == '__main__':
     main()
