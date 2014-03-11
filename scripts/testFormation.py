@@ -61,6 +61,7 @@ def robotPositionDomainSet(dicoRobots):
         # ajout des domaines angles a respecter par chaque robot dans le dico
     #print('positionDomain:', dicoRobots)
 
+
 """def regulationMessagesFlow():# emet les consignes de cap et de vitesse a intervalles reguliers
     def __init__(self, target_sim=False):
             if target_sim:#

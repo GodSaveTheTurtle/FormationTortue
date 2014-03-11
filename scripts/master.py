@@ -7,6 +7,8 @@ import socket
 from publisher import ThreadedPublisher
 from geometry_msgs.msg import Twist
 
+from settings import Settings
+
 import state
 
 
@@ -23,19 +25,19 @@ class MainThread(ThreadedPublisher):
         self.state = None
 
     def update(self):
-        ''' Replace this thread's loop with the listener's activation '''
-        if self.commands['next_state']:
+        ''' Update the state '''
+        if self.commands.next_state:
             if self.state:
-                print 'Quitting state', type(self.state).__name__
+                rospy.loginfo('Quitting state %s', type(self.state).__name__)
                 self.state.end(self.commands)
-            print 'Entering state', self.commands['next_state'].__name__
-            self.state = self.commands['next_state'](self.commands)
+            rospy.loginfo('Entering state %s', self.commands.next_state.__name__)
+            self.state = self.commands.next_state(self.commands)
 
         self.state.update(self.commands)
 
         t = Twist()
-        t.linear.x = self.commands['linear_spd']
-        t.angular.z = self.commands['angular_spd']
+        t.linear.x = self.commands.linear_spd
+        t.angular.z = self.commands.angular_spd
         self.publish(t)
 
 
@@ -61,12 +63,12 @@ class NetworkThread(ThreadedPublisher):
             data = self.s.recv(1024).split(" ")
             if data[0] == 'd':  # Direction command
                 lin, ang = [int(i) for i in data[1:]]
-                self.commands['in_linear_spd'] = lin
-                self.commands['in_angular_spd'] = ang
+                self.commands.in_linear_spd = lin
+                self.commands.in_angular_spd = ang
             elif data[0] == 's':
-                self.commands['visible_slaves'] += int(data[1])
+                self.commands.visible_slaves += int(data[1])
             elif data[0] == 'o':
-                self.commands['has_obstacle'] = not self.commands['has_obstacle']
+                self.commands.has_obstacle = not self.commands.has_obstacle
 
     def terminate(self):
         super(NetworkThread, self).terminate()
@@ -77,45 +79,58 @@ class NetworkThread(ThreadedPublisher):
         self.s.close()
 
 
+class SimSlaveTracker(object):
+    def __init__(self, topic, type):
+        self._running = False
+        # TODO subsciber...
+
+    def update(self):
+        pass
+
+    def terminate(self):
+        rospy.loginfo('Terminating %s', type(self).__name__)
+        self._running = False
+        #TODO
+
+    def start(self):
+        ''' Returns self for chaining '''
+        self._running = True
+        # TODO
+        return self
+
+    def join(self):
+        # TODO
+        pass
+
+
 if __name__ == '__main__':
 
-    simu_mode = rospy.get_param('simu_mode') or False
-
-    # Dictionary that holds the 'global' variables and configuration
-    # TODO export as singleton somewhere?
-    commands = {
-        'nb_slaves': 0,  # number of slaves in the formation
-        'visible_slaves': 0,  # When != to nb_slaves, the master enters Search state
-        'linear_spd': 0,  # linear speed of the robot, after transformation according to the state
-        'angular_spd': 0,  # angular speed of the robot, after transformation according to the state
-        'in_linear_spd': 0,  # linear speed instruction recieved from the remote controller
-        'in_angular_spd': 0,  # linear speed instruction recieved from the remote controller
-        'has_obstacle': False,  # should become True when a slave notices an obstacle
-        'lost_slave_found': False,  # flag that commands the transition from Search to Escort state
-        'next_state': state.RemoteControlled,  # That state will be applied at the next iteration
-        'slaves': {
-            'yellow': {
-                'ip': '192.168.0.110',
-            }
-        }
-    }
+    commands = Settings()
+    commands.next_state = state.RemoteControlled
+    commands.sim_mode = rospy.get_param('sim_mode') or False
 
     try:
         rospy.init_node('turtle_alpha')
+        # TODO publisher for slave pose, subscribers to slave pose
 
-        # TODO communication to slaves
+        threads = []
 
-        direction = MainThread(commands, simu_mode).start()
+        if commands.sim_mode:
+            slave_tracker = SimSlaveTracker(commands).start()
+            threads.append(slave_tracker)
+
+        direction = MainThread(commands, commands.sim_mode).start()
         network = NetworkThread(commands).start()
+        threads.extend([direction, network])
 
         rospy.spin()  # waits until rospy.is_shutdown() is true (Ctrl+C)
 
-        print '\nTerminating the publishers...'
-        for thread in (network, direction):
+        rospy.loginfo('\nTerminating the publishers...')
+        for thread in threads.reverse():
             thread.terminate()
             thread.join()
 
-        print 'All ok.'
+        rospy.loginfo('All ok.')
 
     except rospy.ROSInterruptException:
         pass
