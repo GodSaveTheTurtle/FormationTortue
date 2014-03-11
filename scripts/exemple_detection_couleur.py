@@ -79,10 +79,8 @@ def find_robots(current_cv_frame):
             centroidy = cv.Round((pt1[1] + pt2[1]) / 2)
             centroids.append((centroidx, centroidy))
 
-            if i == 0:
-                cv.Circle(imgdraw, centroids[0], 25, (0, 255, 255))
-            else:
-                cv.Circle(imgdraw, centroids[0], 25, (255, 0, 255))
+            cv.Circle(imgdraw, centroids[0], 25, (0, 255, 255))
+            print 'couleur '+param_robots[i]['color']+' posx : '+centroidx
             centroids.pop(0)
 
     cv.ShowImage("Real", current_cv_frame)
