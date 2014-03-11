@@ -10,8 +10,11 @@ class Settings:
     has_obstacle = False  # should become True when a slave notices an obstacle
     lost_slave_found = False  # flag that commands the transition from Search to Escort state
     next_state = None  # That state will be applied at the next iteration
+    sim_mode = False
     slaves = {
         'yellow': {
             'ip': '192.168.0.110',
+            'distance': 42,
+            'angle': -5
         }
     }

@@ -79,25 +79,54 @@ class NetworkThread(ThreadedPublisher):
         self.s.close()
 
 
-if __name__ == '__main__':
+class SimSlaveTracker(object):
+    def __init__(self, topic, type):
+        self._running = False
+        # TODO subsciber...
 
-    simu_mode = rospy.get_param('simu_mode') or False
+    def update(self):
+        pass
+
+    def terminate(self):
+        rospy.loginfo('Terminating %s', type(self).__name__)
+        self._running = False
+        #TODO
+
+    def start(self):
+        ''' Returns self for chaining '''
+        self._running = True
+        # TODO
+        return self
+
+    def join(self):
+        # TODO
+        pass
+
+
+if __name__ == '__main__':
 
     commands = Settings()
     commands.next_state = state.RemoteControlled
+    commands.sim_mode = rospy.get_param('sim_mode') or False
 
     try:
         rospy.init_node('turtle_alpha')
+        # TODO publisher for slave pose, subscribers to slave pose
 
-        # TODO communication to slaves
+        threads = []
 
-        direction = MainThread(commands, simu_mode).start()
+        if commands.sim_mode:
+            slave_tracker = SimSlaveTracker(commands).start()
+            threads.append(slave_tracker)
+
+        direction = MainThread(commands, commands.sim_mode).start()
         network = NetworkThread(commands).start()
+        threads.extend([direction, network])
 
         rospy.spin()  # waits until rospy.is_shutdown() is true (Ctrl+C)
 
         rospy.loginfo('\nTerminating the publishers...')
-        for thread in (network, direction):
+        for thread in threads.reverse():
             thread.terminate()
             thread.join()
 

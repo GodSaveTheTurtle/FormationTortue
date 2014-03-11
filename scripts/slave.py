@@ -42,10 +42,13 @@ class MainThread(ThreadedPublisher):
 
 if __name__ == '__main__':
 
-    name = 'slave'
-    simu_mode = rospy.get_param('simu_mode', False)
+    commands = Settings()
+    commands.next_state = state.Obey
 
-    if simu_mode:
+    name = 'slave'
+    commands.sim_mode = rospy.get_param('sim_mode', False)
+
+    if commands.sim_mode:
         from turtlesim.srv import Spawn
 
         # using rospy.get_name() as parameter for rospy.init_node() is not allowed
@@ -60,12 +63,7 @@ if __name__ == '__main__':
     try:
         rospy.init_node(name)
 
-        # TODO states
-
-        commands = Settings()
-        commands.next_state = state.Obey
-
-        direction = MainThread(commands, simu_mode, name).start()
+        direction = MainThread(commands, commands.sim_mode, name).start()
 
         rospy.spin()  # waits until rospy.is_shutdown() is true (Ctrl+C)
 

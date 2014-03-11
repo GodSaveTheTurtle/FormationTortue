@@ -1,7 +1,7 @@
   <launch>
     <!-- Turtlesim Node-->
     <node pkg="turtlesim" type="turtlesim_node" name="sim"/>
-    <param name="simu_mode" type="bool" value="True" />
+    <param name="sim_mode" type="bool" value="True" />
 
     <node name="master" pkg="formation" type="master.py" respawn="false" output="screen" />
 

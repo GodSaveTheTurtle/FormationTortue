@@ -1,3 +1,7 @@
+import testFormation
+import rospy
+
+
 class State(object):
 
     def __init__(self, commands):
@@ -20,6 +24,15 @@ class RemoteControlled(State):
 
     def __init__(self, commands):
         super(RemoteControlled, self).__init__(commands)
+        self.dicoRobots = [
+            {
+                'tetaSetPoint': 0,
+                'setDistance': 0,
+                'teta': commands.slaves['yellow']['angle'],
+                'D': commands.slaves['yellow']['distance']
+            }
+        ]
+        testFormation.robotPositionDomainSet(self.dicoRobots)
         # TODO send something to the android client to display the joysticks
 
     def update(self, commands):
@@ -33,6 +46,10 @@ class RemoteControlled(State):
         else:
             commands.linear_spd = commands.in_linear_spd * RemoteControlled.LIN_SPEED_MULT
             commands.angular_spd = commands.in_angular_spd * RemoteControlled.ANG_SPEED_MULT
+
+            testFormation.modeRegulation(self.dicoRobots)
+            testFormation.regulationMessagesFlow(self.dicoRobots)
+            rospy.loginfo(self.dicoRobots)
 
 
 class Obstacle(State):
