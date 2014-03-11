@@ -3,17 +3,19 @@ import cv
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 
-NB_ROBOTS = 2
+NB_ROBOTS = 4
 
 hsv_colors = {
-    'yellow': {'min': cv.Scalar(20, 100, 100), 'max': cv.Scalar(40, 255, 255)},
+    'yellow': {'min': cv.Scalar(25, 100, 100), 'max': cv.Scalar(40, 255, 255)},
     'pink': {'min': cv.Scalar(150, 50, 50), 'max': cv.Scalar(175, 255, 255)},
-    'red': {'min': cv.Scalar(0, 100, 100), 'max': cv.Scalar(15, 255, 255)},
+    'red': {'min': cv.Scalar(0, 100, 100), 'max': cv.Scalar(10, 255, 255)},
     'green': {'min': cv.Scalar(55, 50, 50), 'max': cv.Scalar(65, 255, 255)}
 }
 
 param_robots = [
     {'color': 'yellow', 'pos_x': 0},
+    {'color': 'pink', 'pos_x': 0},
+    {'color': 'green', 'pos_x': 0},
     {'color': 'red', 'pos_x': 0}
 ]
 
