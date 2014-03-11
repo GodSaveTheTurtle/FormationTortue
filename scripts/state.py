@@ -2,7 +2,7 @@ class State(object):
 
     def __init__(self, commands):
         ''' Constructior, do stuff required when entering that state '''
-        commands['next_state'] = None
+        commands.next_state = None
         pass
 
     def update(self, commands):
@@ -26,13 +26,13 @@ class RemoteControlled(State):
         super(RemoteControlled, self).update(commands)
         # TODO: compute what to send to the slaves
 
-        if commands['has_obstacle']:
-            commands['next_state'] = Obstacle
-        elif commands['visible_slaves'] != commands['nb_slaves']:
-            commands['next_state'] = Search
+        if commands.has_obstacle:
+            commands.next_state = Obstacle
+        elif commands.visible_slaves != commands.nb_slaves:
+            commands.next_state = Search
         else:
-            commands['linear_spd'] = commands['in_linear_spd'] * RemoteControlled.LIN_SPEED_MULT
-            commands['angular_spd'] = commands['in_angular_spd'] * RemoteControlled.ANG_SPEED_MULT
+            commands.linear_spd = commands.in_linear_spd * RemoteControlled.LIN_SPEED_MULT
+            commands.angular_spd = commands.in_angular_spd * RemoteControlled.ANG_SPEED_MULT
 
 
 class Obstacle(State):
@@ -44,11 +44,11 @@ class Obstacle(State):
     def update(self, commands):
         super(Obstacle, self).update(commands)
 
-        if commands['has_obstacle']:
-            commands['linear_spd'] = 0
-            commands['angular_spd'] = 0
+        if commands.has_obstacle:
+            commands.linear_spd = 0
+            commands.angular_spd = 0
         else:
-            commands['next_state'] = RemoteControlled
+            commands.next_state = RemoteControlled
 
 
 class Search(State):
@@ -62,13 +62,13 @@ class Search(State):
         self.remaining_search_time += 1
 
         if self.remaining_search_time <= 0:
-            commands['nb_slaves'] -= 1  # a slave has successfully escaped
-            commands['next_state'] = RemoteControlled
-        elif commands['lost_slave_found']:
-            commands['next_state'] = Escort
+            commands.nb_slaves -= 1  # a slave has successfully escaped
+            commands.next_state = RemoteControlled
+        elif commands.lost_slave_found:
+            commands.next_state = Escort
         else:
-            commands['linear_spd'] = 0
-            commands['angular_spd'] = 3
+            commands.linear_spd = 0
+            commands.angular_spd = 3
 
 
 class Escort(State):
@@ -78,4 +78,24 @@ class Escort(State):
 
     def update(self, commands):
         super(Escort, self).update(commands)
+        #TODO command stray slave
+
+
+class Wait(State):
+    def __init__(self, commands):
+        super(Wait, self).__init__(commands)
+        # TODO send something to the android client
+
+    def update(self, commands):
+        super(Wait, self).update(commands)
+        #TODO command stray slave
+
+
+class Obey(State):
+    def __init__(self, commands):
+        super(Obey, self).__init__(commands)
+        # TODO send something to the android client
+
+    def update(self, commands):
+        super(Obey, self).update(commands)
         #TODO command stray slave
