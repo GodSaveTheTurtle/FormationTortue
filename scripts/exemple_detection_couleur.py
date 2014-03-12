@@ -56,7 +56,6 @@ def find_robots(current_cv_frame):
 
     imgdraw = cv.CreateImage(ROI_frame_size, 8, 3)
     cv.SetZero(imgdraw)
-    cv.Flip(ROI_frame, ROI_frame, 1)
     cv.Smooth(ROI_frame, ROI_frame, cv.CV_GAUSSIAN, 3, 0)
     imghsv = convertRGB2HSV(ROI_frame)
 
