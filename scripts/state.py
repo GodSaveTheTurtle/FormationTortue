@@ -24,32 +24,42 @@ class RemoteControlled(State):
 
     def __init__(self, commands):
         super(RemoteControlled, self).__init__(commands)
-        self.dicoRobots = [
-            {
+        self.dicoRobots = []
+        for slave in commands.slaves:
+            self.dicoRobots.append({
                 'tetaSetPoint': 0,
                 'setDistance': 0,
-                'teta': commands.slaves['yellow']['angle'],
-                'D': commands.slaves['yellow']['distance']
-            }
-        ]
+                'teta': commands.slaves[slave]['angle'],
+                'D': commands.slaves[slave]['distance']
+            })
         testFormation.robotPositionDomainSet(self.dicoRobots)
         # TODO send something to the android client to display the joysticks
 
     def update(self, commands):
         super(RemoteControlled, self).update(commands)
-        # TODO: compute what to send to the slaves
 
         if commands.has_obstacle:
             commands.next_state = Obstacle
         elif commands.visible_slaves != commands.nb_slaves:
             commands.next_state = Search
         else:
+            # Update own's speed
             commands.linear_spd = commands.in_linear_spd * RemoteControlled.LIN_SPEED_MULT
             commands.angular_spd = commands.in_angular_spd * RemoteControlled.ANG_SPEED_MULT
 
-            testFormation.modeRegulation(self.dicoRobots)
-            testFormation.regulationMessagesFlow(self.dicoRobots)
-            rospy.loginfo(self.dicoRobots)
+            self.notify_slaves()
+
+    def notify_slaves(self):
+        # What do we see? Computations etc
+        # TODO
+
+        # Compute instructions
+        testFormation.modeRegulation(self.dicoRobots)
+        # testFormation.regulationMessagesFlow(self.dicoRobots)
+        rospy.logdebug(self.dicoRobots)
+
+        # Send to slaves
+        # TODO
 
 
 class Obstacle(State):
