@@ -9,14 +9,13 @@ from geometry_msgs.msg import Vector3
 from controller import DirectionalKeyListener
 
 
-class ThreadedPublisher(object):
+class RosThread(object):
+    '''
+    Creates a thread calling the update() method at the chosen frequency.
+    Override loop() to change the function used as target for the thread
+    '''
 
-    def __init__(self, topic, type, frequency=1):
-        if topic and type:
-            self._pub = rospy.Publisher(topic, type)
-        else:
-            self._pub = None
-
+    def __init__(self, frequency=1):
         self._thread = Thread(target=self.loop)
         self._frequency = frequency
         self._running = False
@@ -39,13 +38,70 @@ class ThreadedPublisher(object):
         self._thread.start()
         return self
 
+    def join(self):
+        self._thread.join()
+
+
+# Could probably be used through multiple inheritance instead, but w/e...
+class ThreadedPublisher(RosThread):
+
+    def __init__(self, topic, type, frequency=1):
+        super(ThreadedPublisher, self).__init__(frequency)
+        if topic and type:
+            self._pub = rospy.Publisher(topic, type)
+        else:
+            self._pub = None
+
     def publish(self, *args):
         if self._pub:
             # rospy.loginfo(*args)
             self._pub.publish(*args)
 
+
+class StateSwitcher(ThreadedPublisher):
+    def __init__(self, shared_data, topic=None, msg_type=None, freq=1/10.0, name='turtleX'):
+        super(StateSwitcher, self).__init__(topic, msg_type, freq)
+        self._shared_data = shared_data
+        self._state = None
+
+    def update(self):
+        if self._shared_data.next_state:
+            if self._state:
+                rospy.loginfo('Quitting state %s', type(self._state).__name__)
+                self._state.end(self._shared_data)
+            rospy.loginfo('Entering state %s', self._shared_data.next_state.__name__)
+            self._state = self._shared_data.next_state(self._shared_data)
+
+        self._state.update(self._shared_data)
+
+        t = Twist()
+        t.linear.x = self._shared_data.linear_spd
+        t.angular.z = self._shared_data.angular_spd
+        rospy.logdebug(t)
+        self.publish(t)
+
+
+class SimpleSubscriber(object):
+    ''' Uses the same interface as RosThread/ThreadedPublisher for simplicity in calling code '''
+
+    def __init__(self, topic, msg_type):
+        self.topic = topic
+        self.msg_type = msg_type
+        self._sub = None
+
+    def update(self, data):
+        pass
+
+    def terminate(self):
+        rospy.loginfo('Terminating %s', type(self).__name__)
+        self._sub.unsubscribe()
+
+    def start(self):
+        self._sub = rospy.Subscriber(self.topic, self.msg_type, self.update)
+        return self
+
     def join(self):
-        self._thread.join()
+        pass
 
 
 class LedController(ThreadedPublisher):

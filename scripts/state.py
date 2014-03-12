@@ -1,5 +1,7 @@
-import testFormation
 import rospy
+
+import testFormation
+import testEsclave
 
 from detection_couleur import ColorTracking
 
@@ -20,13 +22,15 @@ class State(object):
         pass
 
 
+### Master States
+
 class RemoteControlled(State):
     LIN_SPEED_MULT = 1/75.0  # Multiplier for the linear speed (input is bewteen -100 and +100)
     ANG_SPEED_MULT = 1/40.0  # Multiplier for the angular speed (input is bewteen -100 and +100)
 
     def __init__(self, commands):
         super(RemoteControlled, self).__init__(commands)
-        self.ctrack = ColorTracking()
+        self._ctrack = ColorTracking()
         # TODO send something to the android client to display the joysticks
 
     def update(self, commands):
@@ -43,24 +47,23 @@ class RemoteControlled(State):
 
             self.notify_slaves(commands)
 
-    def end(self, commands):
-        super(RemoteControlled, self).end(commands)
-        self.commands.linear_spd = 0
-        self.commands.angular_spd = 0
-
     def notify_slaves(self, commands):
         # What do we see? Computations etc
-        self.ctrack.update_slave_positions(commands.slaves)
+        self._ctrack.update_slave_positions(commands.slaves)
 
         # Compute instructions
         testFormation.run(commands.slaves)
-        # testFormation.regulationMessagesFlow(self.dicoRobots)
         rospy.logdebug(commands.slaves)
 
         # Send to slaves
         for slave in commands.slaves:
-            # TODO send
-            pass
+            slave_data = commands.slaves[slave]
+            slave_data.send()
+
+    def end(self, commands):
+        super(RemoteControlled, self).end(commands)
+        self.commands.linear_spd = 0
+        self.commands.angular_spd = 0
 
 
 class Obstacle(State):
@@ -109,6 +112,8 @@ class Escort(State):
         #TODO command stray slave
 
 
+### Slave States
+
 class Wait(State):
     def __init__(self, commands):
         super(Wait, self).__init__(commands)
@@ -126,4 +131,5 @@ class Obey(State):
 
     def update(self, commands):
         super(Obey, self).update(commands)
+        testEsclave.main(commands.slaves[commands.self_color])
         #TODO command stray slave

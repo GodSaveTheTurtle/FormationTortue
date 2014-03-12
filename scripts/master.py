@@ -2,66 +2,40 @@
 
 from __future__ import division
 import socket
+from threading import Thread
 
 import rospy
-
 from geometry_msgs.msg import Twist
-from turtlesim.msg import Pose
 
 import state
-from publisher import ThreadedPublisher
-from settings import Settings
-from formation.msg import Instruction
+from thread_utils import RosThread, StateSwitcher
+from data_utils import Settings, SlaveData, Color
 
 
-class MainThread(ThreadedPublisher):
-    # TODO support for more than one publisher
+class MainThread(StateSwitcher):
 
-    def __init__(self, commands, target_sim=False):
+    def __init__(self, shared_data, target_sim=False):
         if target_sim:
             topic = '/turtle1/cmd_vel'
         else:
             topic = '/cmd_vel_mux/input/teleop'
-        super(MainThread, self).__init__(topic, Twist, 1/10.0)
-        self.commands = commands
-        for slave_name in self.commands.slaves:
-            self.commands.slaves[slave_name]['pub'] = rospy.Publisher('/%s/instructions' % slave_name, Instruction)
-        self.state = None
-
-    def update(self):
-        ''' Update the state '''
-        if self.commands.next_state:
-            if self.state:
-                rospy.logdebug('Quitting state %s', type(self.state).__name__)
-                self.state.end(self.commands)
-            rospy.logdebug('Entering state %s', self.commands.next_state.__name__)
-            self.state = self.commands.next_state(self.commands)
-
-        self.state.update(self.commands)
-
-        t = Twist()
-        t.linear.x = self.commands.linear_spd
-        t.angular.z = self.commands.angular_spd
-        self.publish(t)
-        for slave_name in self.commands.slaves:
-            self.commands.slaves[slave_name]['pub'].publish(Instruction(0, 0))
+        super(MainThread, self).__init__(shared_data, topic, Twist)
 
 
-class NetworkThread(ThreadedPublisher):
+class RemoteControlListener(RosThread):
 
-    def __init__(self, commands):
-        ''' That's not really a publisher but w/e, the threading is done easily that way '''
-        super(NetworkThread, self).__init__(None, None)
-        self.commands = commands
+    def __init__(self, shared_data):
+        super(RemoteControlListener, self).__init__()
+        self.shared_data = shared_data
         self.s = None
         self.hostname = '0.0.0.0'
-        self.port = 1337
+        self.port = shared_data.control_port
 
     def start(self):
         self.s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         # self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.s.bind((self.hostname, self.port))
-        return super(NetworkThread, self).start()
+        return super(RemoteControlListener, self).start()
 
     def loop(self):
         ''' Replace this thread's loop with a blocking wait on the socket '''
@@ -69,15 +43,15 @@ class NetworkThread(ThreadedPublisher):
             data = self.s.recv(1024).split(" ")
             if data[0] == 'd':  # Direction command
                 lin, ang = [int(i) for i in data[1:]]
-                self.commands.in_linear_spd = lin
-                self.commands.in_angular_spd = ang
+                self.shared_data.in_linear_spd = lin
+                self.shared_data.in_angular_spd = ang
             elif data[0] == 's':
-                self.commands.visible_slaves += int(data[1])
+                self.shared_data.visible_slaves += int(data[1])
             elif data[0] == 'o':
-                self.commands.has_obstacle = not self.commands.has_obstacle
+                self.shared_data.has_obstacle = not self.shared_data.has_obstacle
 
     def terminate(self):
-        super(NetworkThread, self).terminate()
+        super(RemoteControlListener, self).terminate()
         # Need to send something to stop the waiting loop
         tmp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         tmp_socket.sendto('0 0', (self.hostname, self.port))
@@ -85,61 +59,70 @@ class NetworkThread(ThreadedPublisher):
         self.s.close()
 
 
-class SimSlaveTracker(object):
-    def __init__(self, commands):
-        self._running = False
-        self._sub = None
-        self.commands = commands
+class SlaveSocketServer(object):
+    BUFFER_SIZE = 256
 
-    def update(self, *data):
-        rospy.logdebug(data)
+    def __init__(self, shared_data):
+        self._shared_data = shared_data
+        self._shared_data.connected_slaves = 0
+        self._socket = None
 
-    def terminate(self):
-        rospy.logdebug('Terminating %s', type(self).__name__)
-        self._running = False
-        self._sub.unregister()
-        self._sub = None
+    def _register_connection(self, *connection_info):
+        conn, addr = connection_info
+        data = conn.recv(SlaveSocketServer.BUFFER_SIZE)
+        print data
+        try:
+            self._shared_data.slaves[Color.reverse_mapping[data]].conn = conn
+            self._shared_data.connected_slaves += 1
+        except KeyError:
+            conn.close()
 
     def start(self):
-        ''' Returns self for chaining '''
-        self._running = True
-        # TODO retrieve from kinect instead
-        self._sub = rospy.Subscriber('/slave/pose', Pose, self.update)
-        return self
+        self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._socket.bind(('0.0.0.0', self._shared_data.slave_port))
+        self._socket.listen(self._shared_data.nb_slaves)
+
+        while self._shared_data.connected_slaves < self._shared_data.nb_slaves:
+            Thread(target=self._register_connection, args=self._socket.accept())
+
+    def terminate(self):
+        self._socket.shutdown()  # Closes the connections
+        self._socket.close()
 
     def join(self):
         pass
 
 
-if __name__ == '__main__':
-
-    commands = Settings()
-    commands.next_state = state.RemoteControlled
-    commands.sim_mode = rospy.get_param('sim_mode', False)
+def setup():
+    shared_data = Settings()
+    shared_data.next_state = state.RemoteControlled
+    shared_data.sim_mode = rospy.get_param('sim_mode', False)
 
     for slave_name in rospy.get_param('master/slaves', []):
-        commands.slaves[slave_name] = {
-            'pub': None,
-            'angle': 0,
-            'distance': 0
-        }
+        shared_data.slaves[slave_name] = SlaveData()
+    return shared_data
+
+
+if __name__ == '__main__':
+
+    shared_data = setup()
+
+    print shared_data
 
     try:
         rospy.init_node('turtle_alpha')
-        # TODO publisher for slave pose, subscribers to slave pose
 
         threads = []
 
-        if commands.sim_mode:
-            threads.append(SimSlaveTracker(commands).start())
-
-        threads.append(MainThread(commands, commands.sim_mode).start())
-        threads.append(NetworkThread(commands).start())
+        threads.append(SlaveSocketServer(shared_data).start())
+        threads.append(MainThread(shared_data).start())
+        threads.append(RemoteControlListener(shared_data).start())
 
         rospy.spin()  # waits until rospy.is_shutdown() is true (Ctrl+C)
 
-        rospy.logdebug('\nTerminating the publishers...')
+        # Sequentially terminate the threads in reverse declaration order
         threads.reverse()
+        rospy.logdebug('\nTerminating the threads...')
         for thread in threads:
             thread.terminate()
             thread.join()
