@@ -3,22 +3,23 @@ import cv
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 
-NB_ROBOTS = 5
+NB_ROBOTS = 4
+FOV_Y_ORIGIN = 100
+FOV_Y_SIZE = 100
 
 hsv_colors = {
-    'yellow': {'min': cv.Scalar(30, 100, 100), 'max': cv.Scalar(45, 255, 255)},
-    'pink': {'min': cv.Scalar(150, 50, 50), 'max': cv.Scalar(175, 255, 255)},
-    'red': {'min': cv.Scalar(0, 100, 100), 'max': cv.Scalar(10, 255, 255)},
+    'yellow': {'min': cv.Scalar(20, 100, 100), 'max': cv.Scalar(35, 255, 255)},
+    'pink': {'min': cv.Scalar(140, 50, 50), 'max': cv.Scalar(160, 255, 255)},
+    'blue': {'min': cv.Scalar(115, 50, 100), 'max': cv.Scalar(135, 255, 255)},
     'orange': {'min': cv.Scalar(18, 40, 90), 'max': cv.Scalar(27, 255, 255)},
-    'green': {'min': cv.Scalar(55, 50, 50), 'max': cv.Scalar(65, 255, 255)}
+    'green': {'min': cv.Scalar(50, 50, 50), 'max': cv.Scalar(70, 255, 255)}
 }
 
 param_robots = [
-    {'color': 'yellow', 'pos_x': 0},
     {'color': 'pink', 'pos_x': 0},
+    {'color': 'blue', 'pos_x': 0},
     {'color': 'green', 'pos_x': 0},
-    {'color': 'orange', 'pos_x': 0},
-    {'color': 'red', 'pos_x': 0}
+    {'color': 'yellow', 'pos_x': 0}
 ]
 
 
@@ -38,56 +39,56 @@ def getthresholdedimg(imghsv, color):
 
     # Select a range of color
     cv.InRangeS(imghsv, hsv_colors[color]['min'],
-                        hsv_colors[color]['max'],
-                        imgthreshold)
+                hsv_colors[color]['max'],
+                imgthreshold)
     return imgthreshold
 
 
 def find_robots(current_cv_frame):
-    frame_size = cv.GetSize(current_cv_frame)
+
+    original_frame_size = cv.GetSize(current_cv_frame)
+    ROI_frame = cv.GetSubRect(current_cv_frame, (0, FOV_Y_ORIGIN,
+                                                 original_frame_size[0], FOV_Y_ORIGIN + FOV_Y_SIZE))
+    ROI_frame_size = cv.GetSize(ROI_frame)
 
     cv.NamedWindow("Real", 0)
     cv.NamedWindow("Final", 0)
 
+    imgdraw = cv.CreateImage(ROI_frame_size, 8, 3)
+    cv.SetZero(imgdraw)
+    cv.Smooth(ROI_frame, ROI_frame, cv.CV_GAUSSIAN, 3, 0)
+    imghsv = convertRGB2HSV(ROI_frame)
+
     for i in range(NB_ROBOTS):
-        imgdraw = cv.CreateImage(frame_size, 8, 3)
-        cv.SetZero(imgdraw)
-        cv.Flip(current_cv_frame, current_cv_frame, 1)
-        cv.Smooth(current_cv_frame, current_cv_frame, cv.CV_GAUSSIAN, 3, 0)
 
-        imghsv = convertRGB2HSV(current_cv_frame)
         imgthresh = getthresholdedimg(imghsv, param_robots[i]['color'])
-
         cv.Erode(imgthresh, imgthresh, None, 3)
         cv.Dilate(imgthresh, imgthresh, None, 10)
         storage = cv.CreateMemStorage(0)
-        contour = cv.FindContours(imgthresh, storage, cv.CV_RETR_CCOMP, cv.CV_CHAIN_APPROX_SIMPLE)
+        list_contours_objets = cv.FindContours(imgthresh, storage, cv.CV_RETR_CCOMP, cv.CV_CHAIN_APPROX_SIMPLE)
 
         points = []
-        centroids = []
-
-        while contour:
+        while list_contours_objets:
             # Draw bounding rectangles
-            bound_rect = cv.BoundingRect(list(contour))
-            contour = contour.h_next()
+            bound_rect = cv.BoundingRect(list(list_contours_objets))
+            list_contours_objets = list_contours_objets.h_next()
             # for more details about cv.BoundingRect,see documentation
             pt1 = (bound_rect[0], bound_rect[1])
             pt2 = (bound_rect[0] + bound_rect[2], bound_rect[1] + bound_rect[3])
             points.append(pt1)
             points.append(pt2)
-            cv.Rectangle(current_cv_frame, pt1, pt2, cv.CV_RGB(255, 0, 0), 1)
+            cv.Rectangle(ROI_frame, pt1, pt2, cv.CV_RGB(255, 0, 0), 1)
 
             # Calculating centroids
 
             centroidx = cv.Round((pt1[0] + pt2[0]) / 2)
             centroidy = cv.Round((pt1[1] + pt2[1]) / 2)
-            centroids.append((centroidx, centroidy))
+            centroids = (centroidx, centroidy)
 
-            cv.Circle(imgdraw, centroids[0], 25, (0, 255, 255))
-            print 'couleur '+param_robots[i]['color']+' posx : '+str(centroidx)
-            centroids.pop(0)
+            cv.Circle(imgdraw, centroids, 25, (0, 255, 255))
+            print 'couleur ' + param_robots[i]['color'] + ' posx : ' + str(centroidx)
 
-    cv.ShowImage("Real", current_cv_frame)
+    cv.ShowImage("Real", ROI_frame)
     cv.ShowImage("Final", imgdraw)
     cv.WaitKey(1)
 
