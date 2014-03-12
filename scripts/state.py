@@ -1,6 +1,8 @@
 import testFormation
 import rospy
 
+from formation.msg import Instruction
+
 
 class State(object):
 
@@ -47,9 +49,14 @@ class RemoteControlled(State):
             commands.linear_spd = commands.in_linear_spd * RemoteControlled.LIN_SPEED_MULT
             commands.angular_spd = commands.in_angular_spd * RemoteControlled.ANG_SPEED_MULT
 
-            self.notify_slaves()
+            self.notify_slaves(commands)
 
-    def notify_slaves(self):
+    def end(self, commands):
+        super(RemoteControlled, self).end(commands)
+        self.commands.linear_spd = 0
+        self.commands.angular_spd = 0
+
+    def notify_slaves(self, commands):
         # What do we see? Computations etc
         # TODO
 
@@ -59,7 +66,9 @@ class RemoteControlled(State):
         rospy.logdebug(self.dicoRobots)
 
         # Send to slaves
-        # TODO
+        for slave in commands.slaves:
+            commands.slaves[slave]['pub'].publish(
+                Instruction(self.dicoRobots[0]['tetaSetPoint'], self.dicoRobots[0]['setDistance']))
 
 
 class Obstacle(State):

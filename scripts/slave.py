@@ -38,6 +38,7 @@ class MainThread(ThreadedPublisher):
         t = Twist()
         t.linear.x = self.commands.linear_spd
         t.angular.z = self.commands.angular_spd
+        print t
         self.publish(t)
 
 
@@ -48,8 +49,10 @@ class InstructionSubscriber(object):
         self.commands = commands
         self.name = name
 
-    def update(self, *data):
+    def update(self, data):
         rospy.loginfo('%s update: %s' % (self.name, data))
+        self.commands.angular_spd = data.angle
+        self.commands.linear_spd = data.direction
         # TODO computations here, publish twists
 
     def terminate(self):
