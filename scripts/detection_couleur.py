@@ -128,16 +128,16 @@ class ColorTracking():
             print 'Attente de recup profondeur'
 
     def __init__(self):
+        #Init du noeud
+        rospy.init_node('kinect_color_tracking', anonymous=True)
         #Init cvbridge
         self.bridge = CvBridge()
         #Init depth recup
         self.is_depth_initialized = False
         self.depth_image = None
-        rospy.init_node('kinect_depth_listener', anonymous=True)
         rospy.Subscriber('camera/depth/image', Image, self.kinect_depth_listener)
 
         #Init color tracking
-        rospy.init_node('kinect_color_listener', anonymous=True)
         rospy.Subscriber('/camera/rgb/image_color', Image, self.kinect_color_listener)
         rospy.spin()
 
