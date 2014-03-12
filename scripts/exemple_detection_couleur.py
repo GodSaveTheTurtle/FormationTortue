@@ -4,6 +4,8 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 
 NB_ROBOTS = 4
+FOV_Y_ORIGIN = 100
+FOV_Y_SIZE = 100
 
 hsv_colors = {
     'yellow': {'min': cv.Scalar(20, 100, 100), 'max': cv.Scalar(35, 255, 255)},
@@ -43,16 +45,20 @@ def getthresholdedimg(imghsv, color):
 
 
 def find_robots(current_cv_frame):
-    frame_size = cv.GetSize(current_cv_frame)
+
+    original_frame_size = cv.GetSize(current_cv_frame)
+    ROI_frame = cv.GetSubRect(current_cv_frame, (0, FOV_Y_ORIGIN,
+                                                 original_frame_size[0], FOV_Y_ORIGIN + FOV_Y_SIZE))
+    ROI_frame_size = cv.GetSize(ROI_frame)
 
     cv.NamedWindow("Real", 0)
     cv.NamedWindow("Final", 0)
 
-    imgdraw = cv.CreateImage(frame_size, 8, 3)
+    imgdraw = cv.CreateImage(ROI_frame_size, 8, 3)
     cv.SetZero(imgdraw)
-    cv.Flip(current_cv_frame, current_cv_frame, 1)
-    cv.Smooth(current_cv_frame, current_cv_frame, cv.CV_GAUSSIAN, 3, 0)
-    imghsv = convertRGB2HSV(current_cv_frame)
+    cv.Flip(ROI_frame, ROI_frame, 1)
+    cv.Smooth(ROI_frame, ROI_frame, cv.CV_GAUSSIAN, 3, 0)
+    imghsv = convertRGB2HSV(ROI_frame)
 
     for i in range(NB_ROBOTS):
 
@@ -60,19 +66,19 @@ def find_robots(current_cv_frame):
         cv.Erode(imgthresh, imgthresh, None, 3)
         cv.Dilate(imgthresh, imgthresh, None, 10)
         storage = cv.CreateMemStorage(0)
-        contour = cv.FindContours(imgthresh, storage, cv.CV_RETR_CCOMP, cv.CV_CHAIN_APPROX_SIMPLE)
+        list_contours_objets = cv.FindContours(imgthresh, storage, cv.CV_RETR_CCOMP, cv.CV_CHAIN_APPROX_SIMPLE)
 
         points = []
-        while contour:
+        while list_contours_objets:
             # Draw bounding rectangles
-            bound_rect = cv.BoundingRect(list(contour))
-            contour = contour.h_next()
+            bound_rect = cv.BoundingRect(list(list_contours_objets))
+            list_contours_objets = list_contours_objets.h_next()
             # for more details about cv.BoundingRect,see documentation
             pt1 = (bound_rect[0], bound_rect[1])
             pt2 = (bound_rect[0] + bound_rect[2], bound_rect[1] + bound_rect[3])
             points.append(pt1)
             points.append(pt2)
-            cv.Rectangle(current_cv_frame, pt1, pt2, cv.CV_RGB(255, 0, 0), 1)
+            cv.Rectangle(ROI_frame, pt1, pt2, cv.CV_RGB(255, 0, 0), 1)
 
             # Calculating centroids
 
@@ -81,9 +87,9 @@ def find_robots(current_cv_frame):
             centroids = (centroidx, centroidy)
 
             cv.Circle(imgdraw, centroids, 25, (0, 255, 255))
-            print 'couleur '+param_robots[i]['color']+' posx : '+str(centroidx)
+            print 'couleur ' + param_robots[i]['color'] + ' posx : ' + str(centroidx)
 
-    cv.ShowImage("Real", current_cv_frame)
+    cv.ShowImage("Real", ROI_frame)
     cv.ShowImage("Final", imgdraw)
     cv.WaitKey(1)
 
