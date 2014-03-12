@@ -3,6 +3,8 @@ import cv
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 
+import exemple_camshift as camshift
+
 NB_ROBOTS = 4
 
 hsv_colors = {
@@ -91,13 +93,22 @@ def find_robots(current_cv_frame):
     cv.WaitKey(1)
 
 
+isInit = False
+
+
 def callback_kinect(data):
     bridge = CvBridge()
     try:
         cv_image = bridge.imgmsg_to_cv(data, "bgr8")
     except CvBridgeError, e:
         print e
-    find_robots(cv_image)
+    #find_robots(cv_image)
+    global isInit
+    if not isInit:
+        camshift.setup(cv_image)
+        isInit = True
+    else:
+        camshift.run(cv_image)
 
 
 def listener_kinect():
