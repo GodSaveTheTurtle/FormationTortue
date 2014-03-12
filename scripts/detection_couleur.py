@@ -140,8 +140,6 @@ class ColorTracking():
         pass
 
     def __init__(self):
-        #Init du noeud
-        rospy.init_node('kinect_color_tracking', anonymous=True)
         #Init cvbridge
         self.bridge = CvBridge()
         #Init depth recup
@@ -151,7 +149,9 @@ class ColorTracking():
 
         #Init color tracking
         rospy.Subscriber('/camera/rgb/image_color', Image, self.kinect_color_listener)
-        rospy.spin()
 
 if __name__ == '__main__':
+    # Init du noeud.
+    rospy.init_node('kinect_color_tracking', anonymous=True)
     ctrack = ColorTracking()
+    rospy.spin()

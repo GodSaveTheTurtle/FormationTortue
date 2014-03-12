@@ -149,7 +149,7 @@ def updatePosition(currentSpeed, currentCap, dicoRobots):
         atan((D * sin(teta) + signX * speed * sin(cap)) / (D * cos(teta) + signY * speed * cos(cap))))
 
 
-def main(dicoRobots):
+def main(dicoRobots, cap=0):
     # calcule geometriquement les cap et vitesses a atteindre
     # for i in range(len(dicoRobots)):
     currentSpeed = 0
@@ -188,6 +188,8 @@ def main(dicoRobots):
         #time.sleep(0.1)
         N = N - 1
         print(N)
+
+    # return (angle, speed) # pour twist: x de linear speed (m/s), z de angular speed (rad/s)
 
 if __name__ == '__main__':
     main()

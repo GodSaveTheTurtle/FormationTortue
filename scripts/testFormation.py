@@ -40,18 +40,20 @@ def robotPositionDomainSet(dicoRobots):
     tetaDotsDomain = []
     for i in range(int(len(dicoRobots)) + 1):
         tetaDotsDomain.append(i * tetaStep - sightWidth / 2)
-    for i in range(len(dicoRobots)):
-        dicoRobots[i]['goal_theta'] = (tetaDotsDomain[i] + tetaDotsDomain[i + 1]) / 2
-        dicoRobots[i]['goal_d'] = goal_d
+    i = 0
+    for key in dicoRobots:
+        dicoRobots[key]['goal_theta'] = (tetaDotsDomain[i] + tetaDotsDomain[i + 1]) / 2
+        dicoRobots[key]['goal_d'] = goal_d
+        i += 1
         # ajout des domaines angles a respecter par chaque robot dans le dico
     #print('positionDomain:', dicoRobots)
 
 
 def test():
-    dicoRobots = [
-        {'goal_theta': 0, 'goal_d': 0, 'theta': 0, 'd': 0},
-        {'goal_theta': 0, 'goal_d': 0, 'theta': 0, 'd': 0}
-    ]
+    dicoRobots = {
+        'yellow': {'goal_theta': 0, 'goal_d': 0, 'theta': 0, 'd': 0},
+        'pink': {'goal_theta': 0, 'goal_d': 0, 'theta': 0, 'd': 0}
+    }
 
     run(dicoRobots)
 

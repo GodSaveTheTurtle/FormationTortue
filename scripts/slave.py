@@ -8,8 +8,8 @@ from geometry_msgs.msg import Twist
 from kobuki_msgs.msg import Led
 
 from settings import Settings
-from formation.msg import Instruction
 import state
+import testEsclave
 
 
 class MainThread(ThreadedPublisher):
@@ -53,10 +53,13 @@ class InstructionSubscriber(object):
         self.name = name
 
     def update(self, data):
+        # data format: {'d': 42, 'theta_rad': -5, 'goal_d': 0, 'goal_theta_rad': 0}
         rospy.loginfo('%s update: %s' % (self.name, data))
-        self.commands.angular_spd = data.angle
-        self.commands.linear_spd = data.direction
         # TODO computations here, publish twists
+        orientation = 0  # TODO subscribe /odom, etc
+        angle, speed = testEsclave.main(data, orientation)
+        self.commands.angular_spd = angle
+        self.commands.linear_spd = speed
 
     def terminate(self):
         rospy.logdebug('Terminating %s', type(self).__name__)
@@ -67,7 +70,8 @@ class InstructionSubscriber(object):
     def start(self):
         ''' Returns self for chaining '''
         self._running = True
-        self._sub = rospy.Subscriber('/%s/instructions' % self.name, Instruction, self.update)
+        # TODO connect TCP, wait for reception
+        # self._sub = rospy.Subscriber('/%s/instructions' % self.name, Instruction, self.update)
         return self
 
     def join(self):

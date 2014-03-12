@@ -2,7 +2,6 @@ import testFormation
 import rospy
 
 from detection_couleur import ColorTracking
-from formation.msg import Instruction
 
 
 class State(object):
@@ -60,8 +59,8 @@ class RemoteControlled(State):
 
         # Send to slaves
         for slave in commands.slaves:
-            commands.slaves[slave]['pub'].publish(
-                Instruction(commands.slaves[slave]['tetaSetPoint'], self.dicoRobots[0]['setDistance']))
+            # TODO send
+            pass
 
 
 class Obstacle(State):
