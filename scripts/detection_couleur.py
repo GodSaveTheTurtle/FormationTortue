@@ -106,7 +106,15 @@ class ColorTracking():
                 centroids = (centroidx, centroidy)
 
                 cv.Circle(img_centroids, centroids, 25, (0, 255, 255))
-                print 'couleur ' + self.param_robots[i]['color'] + ' posx : ' + str(centroidx)
+
+                angle = self.angle_calculation(self, ROI_frame_size[0], centroidx)
+                angledeg = angle / math.PI * 180
+
+                depth = self.find_depth(self, centroidx, centroidy)
+
+                print self.param_robots[i]['color'] + ' posx: ' + str(centroidx) \
+                    + ' angle: '+str(angledeg) \
+                    + ' dist ' + str(depth)
         self.print_images(ROI_frame, img_centroids)
 
     def kinect_depth_listener(self, msg):
