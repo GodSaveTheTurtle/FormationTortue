@@ -1,15 +1,17 @@
 #!/usr/bin/env python
 
 from __future__ import division
+import socket
 
 import rospy
-import socket
-from publisher import ThreadedPublisher
-from geometry_msgs.msg import Twist
 
-from settings import Settings
+from geometry_msgs.msg import Twist
+from turtlesim.msg import Pose
 
 import state
+from publisher import ThreadedPublisher
+from settings import Settings
+from formation.msg import Instruction
 
 
 class MainThread(ThreadedPublisher):
@@ -22,15 +24,17 @@ class MainThread(ThreadedPublisher):
             topic = '/cmd_vel_mux/input/teleop'
         super(MainThread, self).__init__(topic, Twist, 1/10.0)
         self.commands = commands
+        for slave_name in self.commands.slaves:
+            self.commands.slaves[slave_name]['pub'] = rospy.Publisher('/%s/instructions' % slave_name, Instruction)
         self.state = None
 
     def update(self):
         ''' Update the state '''
         if self.commands.next_state:
             if self.state:
-                rospy.loginfo('Quitting state %s', type(self.state).__name__)
+                rospy.logdebug('Quitting state %s', type(self.state).__name__)
                 self.state.end(self.commands)
-            rospy.loginfo('Entering state %s', self.commands.next_state.__name__)
+            rospy.logdebug('Entering state %s', self.commands.next_state.__name__)
             self.state = self.commands.next_state(self.commands)
 
         self.state.update(self.commands)
@@ -39,6 +43,8 @@ class MainThread(ThreadedPublisher):
         t.linear.x = self.commands.linear_spd
         t.angular.z = self.commands.angular_spd
         self.publish(t)
+        for slave_name in self.commands.slaves:
+            self.commands.slaves[slave_name]['pub'].publish(Instruction(0, 0))
 
 
 class NetworkThread(ThreadedPublisher):
@@ -80,26 +86,28 @@ class NetworkThread(ThreadedPublisher):
 
 
 class SimSlaveTracker(object):
-    def __init__(self, topic, type):
+    def __init__(self, commands):
         self._running = False
-        # TODO subsciber...
+        self._sub = None
+        self.commands = commands
 
-    def update(self):
-        pass
+    def update(self, *data):
+        rospy.logdebug(data)
 
     def terminate(self):
-        rospy.loginfo('Terminating %s', type(self).__name__)
+        rospy.logdebug('Terminating %s', type(self).__name__)
         self._running = False
-        #TODO
+        self._sub.unregister()
+        self._sub = None
 
     def start(self):
         ''' Returns self for chaining '''
         self._running = True
-        # TODO
+        # TODO retrieve from kinect instead
+        self._sub = rospy.Subscriber('/slave/pose', Pose, self.update)
         return self
 
     def join(self):
-        # TODO
         pass
 
 
@@ -107,7 +115,14 @@ if __name__ == '__main__':
 
     commands = Settings()
     commands.next_state = state.RemoteControlled
-    commands.sim_mode = rospy.get_param('sim_mode') or False
+    commands.sim_mode = rospy.get_param('sim_mode', False)
+
+    for slave_name in rospy.get_param('master/slaves', []):
+        commands.slaves[slave_name] = {
+            'pub': None,
+            'angle': 0,
+            'distance': 0
+        }
 
     try:
         rospy.init_node('turtle_alpha')
@@ -116,21 +131,20 @@ if __name__ == '__main__':
         threads = []
 
         if commands.sim_mode:
-            slave_tracker = SimSlaveTracker(commands).start()
-            threads.append(slave_tracker)
+            threads.append(SimSlaveTracker(commands).start())
 
-        direction = MainThread(commands, commands.sim_mode).start()
-        network = NetworkThread(commands).start()
-        threads.extend([direction, network])
+        threads.append(MainThread(commands, commands.sim_mode).start())
+        threads.append(NetworkThread(commands).start())
 
         rospy.spin()  # waits until rospy.is_shutdown() is true (Ctrl+C)
 
-        rospy.loginfo('\nTerminating the publishers...')
-        for thread in threads.reverse():
+        rospy.logdebug('\nTerminating the publishers...')
+        threads.reverse()
+        for thread in threads:
             thread.terminate()
             thread.join()
 
-        rospy.loginfo('All ok.')
+        rospy.logdebug('All ok.')
 
     except rospy.ROSInterruptException:
         pass

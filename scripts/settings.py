@@ -12,9 +12,18 @@ class Settings:
     next_state = None  # That state will be applied at the next iteration
     sim_mode = False
     slaves = {
-        'yellow': {
-            'ip': '192.168.0.110',
-            'distance': 42,
-            'angle': -5
-        }
+        ## Example:
+        # 'yellow': {
+        #     'ip': '192.168.0.110',
+        #     'distance': 42,
+        #     'angle': -5
+        # }
     }
+
+    def __str__(self):
+        out = '{\n'
+        for member in dir(self):
+            if not callable(member) and not member.startswith('__'):
+                out += '\t%s: %s\n' % (member, getattr(self, member))
+        out += '}'
+        return out
