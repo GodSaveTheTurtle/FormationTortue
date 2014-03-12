@@ -3,8 +3,6 @@ import cv
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 
-import exemple_camshift as camshift
-
 NB_ROBOTS = 4
 
 hsv_colors = {
@@ -50,23 +48,21 @@ def find_robots(current_cv_frame):
     cv.NamedWindow("Real", 0)
     cv.NamedWindow("Final", 0)
 
+    imgdraw = cv.CreateImage(frame_size, 8, 3)
+    cv.SetZero(imgdraw)
+    cv.Flip(current_cv_frame, current_cv_frame, 1)
+    cv.Smooth(current_cv_frame, current_cv_frame, cv.CV_GAUSSIAN, 3, 0)
+    imghsv = convertRGB2HSV(current_cv_frame)
+
     for i in range(NB_ROBOTS):
-        imgdraw = cv.CreateImage(frame_size, 8, 3)
-        cv.SetZero(imgdraw)
-        cv.Flip(current_cv_frame, current_cv_frame, 1)
-        cv.Smooth(current_cv_frame, current_cv_frame, cv.CV_GAUSSIAN, 3, 0)
 
-        imghsv = convertRGB2HSV(current_cv_frame)
         imgthresh = getthresholdedimg(imghsv, param_robots[i]['color'])
-
         cv.Erode(imgthresh, imgthresh, None, 3)
         cv.Dilate(imgthresh, imgthresh, None, 10)
         storage = cv.CreateMemStorage(0)
         contour = cv.FindContours(imgthresh, storage, cv.CV_RETR_CCOMP, cv.CV_CHAIN_APPROX_SIMPLE)
 
         points = []
-        centroids = []
-
         while contour:
             # Draw bounding rectangles
             bound_rect = cv.BoundingRect(list(contour))
@@ -82,18 +78,14 @@ def find_robots(current_cv_frame):
 
             centroidx = cv.Round((pt1[0] + pt2[0]) / 2)
             centroidy = cv.Round((pt1[1] + pt2[1]) / 2)
-            centroids.append((centroidx, centroidy))
+            centroids = (centroidx, centroidy)
 
-            cv.Circle(imgdraw, centroids[0], 25, (0, 255, 255))
+            cv.Circle(imgdraw, centroids, 25, (0, 255, 255))
             print 'couleur '+param_robots[i]['color']+' posx : '+str(centroidx)
-            centroids.pop(0)
 
     cv.ShowImage("Real", current_cv_frame)
     cv.ShowImage("Final", imgdraw)
     cv.WaitKey(1)
-
-
-isInit = False
 
 
 def callback_kinect(data):
@@ -102,13 +94,7 @@ def callback_kinect(data):
         cv_image = bridge.imgmsg_to_cv(data, "bgr8")
     except CvBridgeError, e:
         print e
-    #find_robots(cv_image)
-    global isInit
-    if not isInit:
-        camshift.setup(cv_image)
-        isInit = True
-    else:
-        camshift.run(cv_image)
+    find_robots(cv_image)
 
 
 def listener_kinect():
