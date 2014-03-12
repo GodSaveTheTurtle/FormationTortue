@@ -11,8 +11,9 @@ import numpy as np
 import cv2
 import cv2.cv as cv
 from math import cos, sin, hypot, atan, degrees, radians, pi
+import testEsclave, time
 
-numberOfRobots = 2
+numberOfRobots = 1
 setDistance = 3
 # distance centurion-legionaire en metres
 maximumDistance = setDistance * 1.1
@@ -22,39 +23,26 @@ sightWidth = 57
 # angle du champ de vision en degres
 tetaStep = sightWidth / numberOfRobots  # calcul du pas d'angle pour distribuer par la suite
 tetaTolerance = tetaStep / 3  # domaine de tolerance sur angle  tout robot depassant considere comme a corriger
-dicoRobots = {0: {'IP': '192.168.0.110', 'tetaSetPoint': 0, 'setDistance': 0, 'teta': 0, 'D': 0},
-              1: {'IP': '192.168.0.110', 'tetaSetPoint': 0, 'setDistance': 0, 'teta': 0, 'D': 0}}
+dicoRobots = {0: {'tetaSetPoint': 0, 'setDistance': 0, 'teta': 0, 'D': 0}}
 regulationActivated = True
 
 
 def robotFlowValuesAquire(dicoRobots):
 # Aquiert les donnees de position actuelles des robots de la kinnect
-    for i in range(len(dicoRobots)):
-        dicoRobots[i]['teta'] = 2 * pi / 6
-        dicoRobots[i]['D'] = 2
-
-
-def robotCommandValuesCompute(dicoRobots):
-# calcule geometriquement les cap et vitesses a atteindre
-    for i in range(len(dicoRobots)):
-        teta1 = dicoRobots[i]['tetaSetPoint']
-        teta2 = dicoRobots[i]['teta']
-        D1 = dicoRobots[i]['setDistance']
-        D2 = dicoRobots[i]['D']
-        dicoRobots[i]['cap'] = pi / 2 - atan((D2 * cos(teta2) - D1 * cos(teta1)) / (D2 * sin(teta2) - D1 * sin(teta1)))
-        dicoRobots[i]['speed'] = hypot((D1 * cos(teta1) - D2 * cos(teta2)), (D1 * sin(teta1) - D2 * sin(teta2)))
+    dicoRobots[0]['teta'] = 23
+    dicoRobots[0]['D'] = 3
 
 
 def modeRegulation(dicoRobots):
-        robotFlowValuesAquire(dicoRobots)
-        robotCommandValuesCompute(dicoRobots)
+        #robotFlowValuesAquire(dicoRobots)
+        testEsclave.main(dicoRobots)
 
 
 def robotPositionDomainSet(dicoRobots):
 # calcule les domaines d'angles a atteindre en fonction du dico de robots
     tetaDotsDomain = []
     for i in range(int(len(dicoRobots)) + 1):
-        tetaDotsDomain.append(i * tetaStep - 50)
+        tetaDotsDomain.append(i * tetaStep - sightWidth / 2)
     for i in range(len(dicoRobots)):
         dicoRobots[i]['tetaSetPoint'] = (tetaDotsDomain[i] + tetaDotsDomain[i + 1]) / 2
         dicoRobots[i]['setDistance'] = setDistance
@@ -83,15 +71,17 @@ def robotPositionDomainSet(dicoRobots):
 
 
 def main():
-    dicoRobots = {
-        0: {'IP': '192.168.0.110', 'tetaSetPoint': 0, 'setDistance': 0, 'teta': 0, 'D': 0},
-        1: {'IP': '192.168.0.110', 'tetaSetPoint': 0, 'setDistance': 0, 'teta': 0, 'D': 0}
-    }
-    print(dicoRobots)
+    dicoRobots = {0: {'tetaSetPoint': 0, 'setDistance': 0, 'teta': 0, 'D': 0}}
+    # print(dicoRobots)
     robotPositionDomainSet(dicoRobots)
+    robotFlowValuesAquire(dicoRobots)
     # while regulationActivated:
-    modeRegulation(dicoRobots)
+    while True:
+        modeRegulation(dicoRobots)
+        print(dicoRobots)
+        time.sleep(5)
+        print('position reset')
         # regulationMessagesFlow(dicoRobots)
-    #print(dicoRobots)
+    print(dicoRobots)
 if __name__ == '__main__':
     main()

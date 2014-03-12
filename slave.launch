@@ -1,0 +1,8 @@
+<launch>
+  <param name="sim_mode" type="bool" value="False" />
+
+  <node name="slave" pkg="formation" type="slave.py" respawn="false" output="screen">
+    <param name="name" type="string" value="nancy" />
+  </node>
+
+</launch>
