@@ -46,7 +46,7 @@ class ColorTracking():
         return imgthreshold
 
     def angle_calculation(self, frame_width, point_x):
-        alpha = FOV_ANGLE_DEG / 180. * math.PI
+        alpha = FOV_ANGLE_DEG / 180. * math.pi
         theta = math.atan((2 * math.fabs((frame_width // 2) - point_x) / frame_width) * math.tan(alpha / 2.0))
         if frame_width // 2 > point_x:
             return -theta
@@ -108,7 +108,7 @@ class ColorTracking():
                 cv.Circle(img_centroids, centroids, 25, (0, 255, 255))
 
                 angle = self.angle_calculation(ROI_frame_size[0], centroidx)
-                angledeg = angle / math.PI * 180
+                angledeg = angle / math.pi * 180
 
                 depth = self.find_depth(centroidx, centroidy)
 
