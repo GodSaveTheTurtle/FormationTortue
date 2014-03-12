@@ -7,6 +7,7 @@ from publisher import ThreadedPublisher
 from geometry_msgs.msg import Twist
 
 from settings import Settings
+from formation.msg import Instruction
 
 import state
 
@@ -18,7 +19,7 @@ class MainThread(ThreadedPublisher):
         if target_sim:
             topic = '/%s/cmd_vel' % name
         else:
-            topic = '/cmd_vel_mux/input/ teleop'
+            topic = '/cmd_vel_mux/input/teleop'
         super(MainThread, self).__init__(topic, Twist, 1/10.0)
         self.commands = commands
         self.state = None
@@ -40,35 +41,61 @@ class MainThread(ThreadedPublisher):
         self.publish(t)
 
 
+class InstructionSubscriber(object):
+    def __init__(self, name, commands):
+        self._running = False
+        self._sub = None
+        self.commands = commands
+        self.name = name
+
+    def update(self, *data):
+        rospy.loginfo('%s update: %s' % (self.name, data))
+        # TODO computations here, publish twists
+
+    def terminate(self):
+        rospy.logdebug('Terminating %s', type(self).__name__)
+        self._running = False
+        self._sub.unregister()
+        self._sub = None
+
+    def start(self):
+        ''' Returns self for chaining '''
+        self._running = True
+        self._sub = rospy.Subscriber('/%s/instructions' % self.name, Instruction, self.update)
+        return self
+
+    def join(self):
+        pass
+
+
 if __name__ == '__main__':
 
     commands = Settings()
     commands.next_state = state.Obey
 
-    name = 'slave'
     commands.sim_mode = rospy.get_param('sim_mode', False)
 
-    if commands.sim_mode:
-        from turtlesim.srv import Spawn
-
-        # using rospy.get_name() as parameter for rospy.init_node() is not allowed
-        name = rospy.get_param(rospy.get_name() + '/name', name)
-
-        rospy.wait_for_service('spawn')
-        spawner = rospy.ServiceProxy('spawn', Spawn)
-        spawner(8, 5, 0, name)
-
-        # TODO populate virtual slave data
-
     try:
-        rospy.init_node(name)
+        rospy.init_node('slave')
+        name = rospy.get_param('~name', 'slave')
 
-        direction = MainThread(commands, commands.sim_mode, name).start()
+        if commands.sim_mode:
+            from turtlesim.srv import Spawn
+            rospy.wait_for_service('spawn')
+            spawner = rospy.ServiceProxy('spawn', Spawn)
+            spawner(8, 5, 0, name)
+            # TODO populate virtual slave data
+
+        rospy.loginfo(commands)
+        rospy.loginfo(name)
+
+        # direction = MainThread(commands, commands.sim_mode, name).start()
+        sub = InstructionSubscriber(name, commands).start()
 
         rospy.spin()  # waits until rospy.is_shutdown() is true (Ctrl+C)
 
-        rospy.loginfo('\nTerminating the publishers...')
-        for thread in (direction):
+        rospy.loginfo('\nTerminating the threads...')
+        for thread in [sub]:
             thread.terminate()
             thread.join()
 
