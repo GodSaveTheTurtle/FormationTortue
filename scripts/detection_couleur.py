@@ -107,10 +107,10 @@ class ColorTracking():
 
                 cv.Circle(img_centroids, centroids, 25, (0, 255, 255))
 
-                angle = self.angle_calculation(self, ROI_frame_size[0], centroidx)
+                angle = self.angle_calculation(ROI_frame_size[0], centroidx)
                 angledeg = angle / math.PI * 180
 
-                depth = self.find_depth(self, centroidx, centroidy)
+                depth = self.find_depth(centroidx, centroidy)
 
                 print self.param_robots[i]['color'] + ' posx: ' + str(centroidx) \
                     + ' angle: '+str(angledeg) \
