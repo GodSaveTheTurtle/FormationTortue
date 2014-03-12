@@ -19,6 +19,8 @@ FormationTortue
 
 ## Structure, exécution
 
+** Newsflash: c'est chiant à faire marcher la com par topics en multi robots. Je vais donc utiliser des sockets et la structure ci-dessous est pas nécessaire. Exécuter les scripts python directement suffira. **
+
 Le code est structuré en package ROS, comme recommandé dans la documentation:
 
 ```
