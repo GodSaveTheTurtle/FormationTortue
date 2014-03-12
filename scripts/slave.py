@@ -5,10 +5,10 @@ from __future__ import division
 import rospy
 from publisher import ThreadedPublisher
 from geometry_msgs.msg import Twist
+from kobuki_msgs.msg import Led
 
 from settings import Settings
 from formation.msg import Instruction
-
 import state
 
 
@@ -16,13 +16,14 @@ class MainThread(ThreadedPublisher):
     # TODO support for more than one publisher
 
     def __init__(self, commands, target_sim=False, name='turtleX'):
-        if target_sim:
-            topic = '/%s/cmd_vel' % name
-        else:
-            topic = '/cmd_vel_mux/input/teleop'
-        super(MainThread, self).__init__(topic, Twist, 1/10.0)
+        # if target_sim:
+        #     topic = '/%s/cmd_vel' % name
+        # else:
+        #     topic = '/cmd_vel_mux/input/teleop'
+        super(MainThread, self).__init__('/mobile_base/commands/led1', Led, 1/10.0)
         self.commands = commands
         self.state = None
+        self.color = 0
 
     def update(self):
         ''' Replace this thread's loop with the listener's activation '''
@@ -39,7 +40,9 @@ class MainThread(ThreadedPublisher):
         t.linear.x = self.commands.linear_spd
         t.angular.z = self.commands.angular_spd
         print t
-        self.publish(t)
+
+        self.color = (self.color + 1) % 4
+        self.publish(self.color)
 
 
 class InstructionSubscriber(object):
