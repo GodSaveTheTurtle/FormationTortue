@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: ascii -*-
+# -*- coding: utf-8 -*-
+
 import rospy
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Image
@@ -123,8 +124,8 @@ class firstOrder:
 
 
 def updatePosition(currentSpeed, currentCap, dicoRobots):
-    D = dicoRobots[i]['D']
-    teta = radians(dicoRobots[i]['teta'])
+    D = dicoRobots[i]['d']
+    teta = radians(dicoRobots[i]['theta'])
     speed = currentSpeed
     cap = currentCap * pi
     if cap > 0 and cap < pi / 2:
@@ -142,9 +143,9 @@ def updatePosition(currentSpeed, currentCap, dicoRobots):
     else:
         signX = 1
         signY = 1
-    dicoRobots[i]['D'] = hypot(
+    dicoRobots[i]['d'] = hypot(
         D * cos(teta) + signX * speed * cos(cap), D * sin(teta) + signY * speed * sin(cap))
-    dicoRobots[i]['teta'] = degrees(
+    dicoRobots[i]['theta'] = degrees(
         atan((D * sin(teta) + signX * speed * sin(cap)) / (D * cos(teta) + signY * speed * cos(cap))))
 
 
@@ -154,9 +155,9 @@ def main(dicoRobots):
     currentSpeed = 0
     currentCap = 0
     teta1 = radians(dicoRobots[i]['tetaSetPoint'])
-    teta2 = radians(dicoRobots[i]['teta'])
+    teta2 = radians(dicoRobots[i]['theta'])
     D1 = dicoRobots[i]['setDistance']
-    D2 = dicoRobots[i]['D']
+    D2 = dicoRobots[i]['d']
     if teta2 > teta1:  # compare teta and tetaSetPoint for the pi/2 shift due to the fact that -pi/2<atan<pi/2
         angleShift = pi / 2
     else:

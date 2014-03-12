@@ -13,10 +13,13 @@ class Settings:
     sim_mode = False
     slaves = {
         ## Example:
-        # 'bamako': {
-        #     'distance': 42,
-        #     'angle': -5
-        # }
+        'yellow': {
+            'd': 42,            ''' from kinect '''
+            'theta_rad': -5,    ''' from kinect '''
+            'goal_d': 0,
+            'goal_theta_rad': 0,  #
+            'addr': None
+        }
     }
 
     def __str__(self):

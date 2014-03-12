@@ -5,15 +5,11 @@
 
   <param name="sim_mode" type="bool" value="True" />
 
-  <!-- Addresses on android AP -->
-  <machine name="valefor" address="192.168.43.197" />
-  <machine name="nancy" address="192.168.43.60" />
-
   <node name="master" pkg="formation" type="master.py" respawn="false" output="screen" >
   	<rosparam param="slaves">[nancy]</rosparam>
   </node>
 
-  <node name="slave" pkg="formation" type="slave.py" respawn="false" output="screen" machine="nancy">
+  <node name="slave" pkg="formation" type="slave.py" respawn="false" output="screen">
     <param name="name" type="string" value="nancy" />
   </node>
 

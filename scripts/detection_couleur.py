@@ -127,6 +127,10 @@ class ColorTracking():
         else:
             print 'Attente de recup profondeur'
 
+    def update_slave_positions(self, slave_data):
+        # TODO
+        pass
+
     def __init__(self):
         #Init du noeud
         rospy.init_node('kinect_color_tracking', anonymous=True)

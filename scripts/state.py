@@ -1,6 +1,7 @@
 import testFormation
 import rospy
 
+from detection_couleur import ColorTracking
 from formation.msg import Instruction
 
 
@@ -26,15 +27,7 @@ class RemoteControlled(State):
 
     def __init__(self, commands):
         super(RemoteControlled, self).__init__(commands)
-        self.dicoRobots = []
-        for slave in commands.slaves:
-            self.dicoRobots.append({
-                'tetaSetPoint': 0,
-                'setDistance': 0,
-                'teta': commands.slaves[slave]['angle'],
-                'D': commands.slaves[slave]['distance']
-            })
-        testFormation.robotPositionDomainSet(self.dicoRobots)
+        self.ctrack = ColorTracking()
         # TODO send something to the android client to display the joysticks
 
     def update(self, commands):
@@ -58,17 +51,17 @@ class RemoteControlled(State):
 
     def notify_slaves(self, commands):
         # What do we see? Computations etc
-        # TODO
+        self.ctrack.update_slave_positions(commands.slaves)
 
         # Compute instructions
-        testFormation.modeRegulation(self.dicoRobots)
+        testFormation.run(commands.slaves)
         # testFormation.regulationMessagesFlow(self.dicoRobots)
-        rospy.logdebug(self.dicoRobots)
+        rospy.logdebug(commands.slaves)
 
         # Send to slaves
         for slave in commands.slaves:
             commands.slaves[slave]['pub'].publish(
-                Instruction(self.dicoRobots[0]['tetaSetPoint'], self.dicoRobots[0]['setDistance']))
+                Instruction(commands.slaves[slave]['tetaSetPoint'], self.dicoRobots[0]['setDistance']))
 
 
 class Obstacle(State):
