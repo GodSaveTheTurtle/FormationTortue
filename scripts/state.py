@@ -37,19 +37,29 @@ class RemoteControlled(State):
 
     def update(self, commands):
         super(RemoteControlled, self).update(commands)
-        # TODO: compute what to send to the slaves
 
         if commands.has_obstacle:
             commands.next_state = Obstacle
         elif commands.visible_slaves != commands.nb_slaves:
             commands.next_state = Search
         else:
+            # Update own's speed
             commands.linear_spd = commands.in_linear_spd * RemoteControlled.LIN_SPEED_MULT
             commands.angular_spd = commands.in_angular_spd * RemoteControlled.ANG_SPEED_MULT
 
-            testFormation.modeRegulation(self.dicoRobots)
-            # testFormation.regulationMessagesFlow(self.dicoRobots)
-            rospy.logdebug(self.dicoRobots)
+            self.notify_slaves()
+
+    def notify_slaves(self):
+        # What do we see? Computations etc
+        # TODO
+
+        # Compute instructions
+        testFormation.modeRegulation(self.dicoRobots)
+        # testFormation.regulationMessagesFlow(self.dicoRobots)
+        rospy.logdebug(self.dicoRobots)
+
+        # Send to slaves
+        # TODO
 
 
 class Obstacle(State):

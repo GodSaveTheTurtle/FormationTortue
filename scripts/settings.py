@@ -13,8 +13,7 @@ class Settings:
     sim_mode = False
     slaves = {
         ## Example:
-        # 'yellow': {
-        #     'ip': '192.168.0.110',
+        # 'bamako': {
         #     'distance': 42,
         #     'angle': -5
         # }
