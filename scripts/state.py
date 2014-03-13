@@ -137,6 +137,6 @@ class Obey(State):
     def update(self, commands):
         super(Obey, self).update(commands)
         angle, speed = testEsclave.main(commands.slaves[commands.self_color])
-
+        print angle, speed
         commands.linear_spd = speed
         commands.angular_spd = angle
