@@ -37,7 +37,7 @@ class RemoteControlled(State):
         super(RemoteControlled, self).update(commands)
 
         if commands.connected_slaves < commands.nb_slaves:
-            rospy.loginfo('connected slaves: {}/{}'.format(commands.connected_slaves, commands.nb_slaves))
+            rospy.loginfo('connected slaves: %d/%d', commands.connected_slaves, commands.nb_slaves)
         elif commands.has_obstacle:
             commands.next_state = Obstacle
         elif commands.visible_slaves != commands.nb_slaves:
@@ -61,8 +61,8 @@ class RemoteControlled(State):
 
     def end(self, commands):
         super(RemoteControlled, self).end(commands)
-        self.commands.linear_spd = 0
-        self.commands.angular_spd = 0
+        commands.linear_spd = 0
+        commands.angular_spd = 0
 
 
 class Obstacle(State):

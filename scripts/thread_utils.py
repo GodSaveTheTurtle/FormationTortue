@@ -77,7 +77,7 @@ class StateSwitcher(ThreadedPublisher):
         t = Twist()
         t.linear.x = self._shared_data.linear_spd
         t.angular.z = self._shared_data.angular_spd
-        rospy.logdebug(t)
+        rospy.loginfo(t)
         self.publish(t)
 
 

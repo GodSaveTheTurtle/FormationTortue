@@ -36,16 +36,19 @@ class MasterListener(RosThread):
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             self._socket.connect((self._master_ip, self._shared_data.slave_port))
-            rospy.loginfo('Sending: {}'.format(self._shared_data.self_color))
+            rospy.loginfo('Sending: %s', self._shared_data.self_color)
             self._socket.send(self._shared_data.self_color)
         except socket.error, e:
             self._socket = None
-            rospy.logerr('Unable to connect to master. \nSocket error: {}'.format(e))
+            rospy.logerr('Unable to connect to master. \nSocket error: %s', e)
         return super(MasterListener, self).start()
 
     def loop(self):
-        while self._socket and self._running and not rospy.is_shutdown:
+        while self._socket and self._running and not rospy.is_shutdown():
             data = self._socket.recv(MasterListener.BUFFER_SIZE)
+            if not data:  # Other end of the socket disconnected
+                self._running = False
+            rospy.logdebug('recv %s', data)
             self._shared_data.slaves[self._shared_data.self_color] = SlaveData(data)
         if self._socket:
             self._socket.close()
@@ -58,7 +61,7 @@ class OdometrySubscriber(SimpleSubscriber):
         self._shared_data = shared_data
 
     def update(self, data):
-        print data
+        rospy.loginfo(data)
 
 
 def setup_shared_data():

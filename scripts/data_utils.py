@@ -67,6 +67,6 @@ class SlaveData(Printable):
         self.conn = None
 
     def send(self):
-        msg = '{} {} {} {}'.format(self.d, self.theta_rad, self.goal_d, self.goal_theta_rad)
-        print msg
-        self.conn.send(msg)
+        if self.conn:
+            msg = '{} {} {} {}'.format(self.d, self.theta_rad, self.goal_d, self.goal_theta_rad)
+            self.conn.send(msg)

@@ -14,8 +14,8 @@ from data_utils import Settings, SlaveData, Color
 
 class MainThread(StateSwitcher):
 
-    def __init__(self, shared_data, target_sim=False):
-        if target_sim:
+    def __init__(self, shared_data):
+        if shared_data.sim_mode:
             topic = '/turtle1/cmd_vel'
         else:
             topic = '/cmd_vel_mux/input/teleop'
@@ -23,12 +23,13 @@ class MainThread(StateSwitcher):
 
 
 class RemoteControlListener(RosThread):
+    BUFFER_SIZE = 256
 
     def __init__(self, shared_data):
         super(RemoteControlListener, self).__init__()
         self.shared_data = shared_data
         self.s = None
-        self.hostname = '0.0.0.0'
+        self.hostname = ''
         self.port = shared_data.control_port
 
     def start(self):
@@ -40,7 +41,8 @@ class RemoteControlListener(RosThread):
     def loop(self):
         ''' Replace this thread's loop with a blocking wait on the socket '''
         while self._running and not rospy.is_shutdown():
-            data = self.s.recv(1024).split(" ")
+            data = self.s.recv(RemoteControlListener.BUFFER_SIZE).split(" ")
+            rospy.loginfo('recv %s', data)
             if data[0] == 'd':  # Direction command
                 lin, ang = [int(i) for i in data[1:]]
                 self.shared_data.in_linear_spd = lin
@@ -71,25 +73,30 @@ class SlaveSocketServer(object):
     def _register_connection(self, *connection_info):
         conn, addr = connection_info
         data = conn.recv(SlaveSocketServer.BUFFER_SIZE)
-        print data
+
         try:
             self._shared_data.slaves[Color.reverse_mapping[data]].conn = conn
+            rospy.loginfo('Registered the %s slave', data)
             self._shared_data.connected_slaves += 1
         except KeyError:
             conn.close()
+            rospy.logerr('Invalid slave id: %s', data)
 
     def start(self):
         ''' Note: blocks until all the slaves are connected '''
-
+        address = ''  # The socket will listen on all interfaces
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._socket.bind(('0.0.0.0', self._shared_data.slave_port))
+        self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self._socket.bind((address, self._shared_data.slave_port))
         self._socket.listen(self._shared_data.nb_slaves)
 
         while self._shared_data.connected_slaves < self._shared_data.nb_slaves and not rospy.is_shutdown():
             try:
-                Thread(target=self._register_connection, args=self._socket.accept())
+                c, a = self._socket.accept()
+                self._register_connection(c, a)
+                # Thread(target=self._register_connection, args=self._socket.accept()).start()
             except socket.error, e:
-                rospy.loginfo('Socket error: {}'.format(e))
+                rospy.loginfo('Socket error: %s', e)
 
         return self
 
@@ -106,8 +113,9 @@ def setup():
     shared_data.next_state = state.RemoteControlled
     shared_data.sim_mode = rospy.get_param('sim_mode', False)
 
-    slaves = rospy.get_param('master/slaves', [])
+    slaves = rospy.get_param('master/slaves', ['yellow'])
     shared_data.nb_slaves = len(slaves)
+    shared_data.visible_slaves = len(slaves)  # To disable switch to search mode
 
     for slave_name in slaves:
         shared_data.slaves[slave_name] = SlaveData()
@@ -116,12 +124,11 @@ def setup():
 
 
 if __name__ == '__main__':
-    shared_data = setup()
-
-    print shared_data
-
     try:
         rospy.init_node('turtle_alpha')
+
+        shared_data = setup()
+        rospy.loginfo(shared_data)
 
         threads = []
 
@@ -137,7 +144,7 @@ if __name__ == '__main__':
         for thread in threads:
             thread.terminate()
             thread.join()
-            print 'Terminated: {}'.format(type(thread).__name__)
+            rospy.loginfo('Terminated: %s', type(thread).__name__)
 
         rospy.logdebug('All ok.')
 
