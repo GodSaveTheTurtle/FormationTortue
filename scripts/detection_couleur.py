@@ -10,7 +10,7 @@ FOV_Y_ORIGIN = 100
 FOV_Y_SIZE = 100
 
 
-class ColorTracking():
+class ColorTracking(object):
     hsv_colors = {
         'yellow': {'min': cv.Scalar(20, 100, 100), 'max': cv.Scalar(35, 255, 255)},
         'pink': {'min': cv.Scalar(140, 50, 50), 'max': cv.Scalar(160, 255, 255)},

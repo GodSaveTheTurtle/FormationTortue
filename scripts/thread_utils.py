@@ -54,11 +54,13 @@ class ThreadedPublisher(RosThread):
 
     def publish(self, *args):
         if self._pub:
-            # rospy.loginfo(*args)
+            rospy.logdebug(*args)
             self._pub.publish(*args)
 
 
 class StateSwitcher(ThreadedPublisher):
+    ''' Handles switching threads and updating the current thread '''
+
     def __init__(self, shared_data, topic=None, msg_type=None, freq=1/10.0, name='turtleX'):
         super(StateSwitcher, self).__init__(topic, msg_type, freq)
         self._shared_data = shared_data
@@ -74,20 +76,19 @@ class StateSwitcher(ThreadedPublisher):
 
         self._state.update(self._shared_data)
 
-        t = Twist()
-        t.linear.x = self._shared_data.linear_spd
-        t.angular.z = self._shared_data.angular_spd
-        rospy.loginfo(t)
-        self.publish(t)
-
 
 class SimpleSubscriber(object):
     ''' Uses the same interface as RosThread/ThreadedPublisher for simplicity in calling code '''
 
-    def __init__(self, topic, msg_type):
+    def __init__(self, topic, msg_type, handler=None):
         self.topic = topic
         self.msg_type = msg_type
         self._sub = None
+
+        if not handler:
+            self._handler = self.update
+        else:
+            self._handler = handler
 
     def update(self, data):
         pass
@@ -97,7 +98,8 @@ class SimpleSubscriber(object):
         self._sub.unregister()
 
     def start(self):
-        self._sub = rospy.Subscriber(self.topic, self.msg_type, self.update)
+        rospy.loginfo('Subscribing to %s', self.topic)
+        self._sub = rospy.Subscriber(self.topic, self.msg_type, self._handler)
         return self
 
     def join(self):

@@ -22,6 +22,15 @@ class SlaveMainThread(StateSwitcher):
             topic = '/cmd_vel_mux/input/teleop'
         super(SlaveMainThread, self).__init__(shared_data, topic, Twist)
 
+    def update(self):
+        super(SlaveMainThread, self).update()
+
+        t = Twist()
+        t.linear.x = self._shared_data.linear_spd
+        t.angular.z = self._shared_data.angular_spd
+        rospy.logdebug(t)
+        self.publish(t)
+
 
 class MasterListener(RosThread):
     BUFFER_SIZE = 256

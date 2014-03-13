@@ -4,6 +4,8 @@ import testFormation
 import testEsclave
 
 from detection_couleur import ColorTracking
+from thread_utils import SimpleSubscriber
+from sim_utils import TurtleSimTracker
 
 
 class State(object):
@@ -30,7 +32,10 @@ class RemoteControlled(State):
 
     def __init__(self, commands):
         super(RemoteControlled, self).__init__(commands)
-        self._ctrack = ColorTracking(commands.slaves)
+        if commands.sim_mode:
+            self._ctrack = TurtleSimTracker(commands.slaves).start()
+        else:
+            self._ctrack = ColorTracking(commands.slaves)
         # TODO send something to the android client to display the joysticks
 
     def update(self, commands):
@@ -61,6 +66,7 @@ class RemoteControlled(State):
 
     def end(self, commands):
         super(RemoteControlled, self).end(commands)
+        self._ctrack = None  # TODO: is there something to stop?
         commands.linear_spd = 0
         commands.angular_spd = 0
 

@@ -33,7 +33,7 @@ class Settings(Printable):
     ''' Dictionary that holds the 'global' variables and configuration'''
 
     def __init__(self):
-        self.nb_slaves = 1  # number of slaves in the formation
+        self.nb_slaves = 0  # number of slaves in the formation
         self.visible_slaves = 0  # When ! = to nb_slaves the master enters Search state
         self.connected_slaves = 0
         self.linear_spd = 0  # linear speed of the robot after transformation according to the state

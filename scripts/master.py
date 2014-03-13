@@ -21,6 +21,15 @@ class MainThread(StateSwitcher):
             topic = '/cmd_vel_mux/input/teleop'
         super(MainThread, self).__init__(shared_data, topic, Twist)
 
+    def update(self):
+        super(MainThread, self).update()
+
+        t = Twist()
+        t.linear.x = self._shared_data.linear_spd
+        t.angular.z = self._shared_data.angular_spd
+        rospy.logdebug(t)
+        self.publish(t)
+
 
 class RemoteControlListener(RosThread):
     BUFFER_SIZE = 256
@@ -34,7 +43,6 @@ class RemoteControlListener(RosThread):
 
     def start(self):
         self.s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        # self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.s.bind((self.hostname, self.port))
         return super(RemoteControlListener, self).start()
 
@@ -42,7 +50,7 @@ class RemoteControlListener(RosThread):
         ''' Replace this thread's loop with a blocking wait on the socket '''
         while self._running and not rospy.is_shutdown():
             data = self.s.recv(RemoteControlListener.BUFFER_SIZE).split(" ")
-            rospy.loginfo('recv %s', data)
+            rospy.logdebug('Remote command: %s', data)
             if data[0] == 'd':  # Direction command
                 lin, ang = [int(i) for i in data[1:]]
                 self.shared_data.in_linear_spd = lin
