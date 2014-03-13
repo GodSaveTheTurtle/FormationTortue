@@ -12,7 +12,7 @@ import numpy as np
 import cv2
 import cv2.cv as cv
 import time
-from math import cos, sin, hypot, atan, degrees, radians, pi, copysign
+from math import cos, sin, hypot, atan, degrees, radians, pi, copysign, sqrt, pow
 
 
 # The recipe gives simple implementation of a Discrete Proportional-Integral-Derivative (PID) controller. PID controller gives output value for error between desired reference input and measurement feedback to minimize error value.
@@ -20,7 +20,7 @@ from math import cos, sin, hypot, atan, degrees, radians, pi, copysign
 #
 # cnr437@gmail.com
 #
-# Example	#########
+# Example   #########
 #
 # p=PID(3.0,0.4,1.2)
 # p.setPoint(5.0)
@@ -105,6 +105,7 @@ class firstOrder:
         self.set_point = 0.0
         self.error = 0.0
         self.maxFlow = maxF
+
     def update(self, current_value):
         flowMeasured = current_value + \
             (self.set_point - current_value) * self.G + (self.set_point - current_value) / self.T
@@ -164,7 +165,10 @@ def main(dicoRobots, cap=0):
         angleShift = -pi / 2
     setCap = degrees(
         angleShift - atan((D2 * cos(teta2) - D1 * cos(teta1)) / (D2 * sin(teta2) - D1 * sin(teta1)))) / 180
-    setSpeed = hypot((D1 * cos(teta1) - D2 * cos(teta2)), (D1 * sin(teta1) - D2 * sin(teta2))) / maximumSpeed
+    distanceToObjective = hypot((D1 * cos(teta1) - D2 * cos(teta2)), (
+        D1 * sin(teta1) - D2 * sin(teta2))) / maximumSpeed
+
+    """
     print('setCap', i, setCap)
     print('speed', i, setSpeed)
     pidForSpeed = PID(0.5, 0.4, 0.5, 10)   # P, I, D
@@ -188,6 +192,11 @@ def main(dicoRobots, cap=0):
         #time.sleep(0.1)
         N = N - 1
         print(N)
+    """
+    time_out = distanceToObjective * 1.5  # temps laisse au robot pour atteindre l'objectif
+    angle = pi / 2 / time_out  # si la vitesse est en quart de tours par minute, a verifier pour obtenir correlation
+    speed = pi / 2 * sqrt(pow(distanceToObjective, 2) / 2)  # but : faire parcourir un quart de cercle au robot
+
 
     # return (angle, speed) # pour twist: x de linear speed (m/s), z de angular speed (rad/s)
 
