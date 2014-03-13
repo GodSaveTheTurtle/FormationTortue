@@ -31,7 +31,7 @@ def robotPositionDomainSet(dicoRobots):
         tetaDotsDomain.append(i * _tetaStep - _sightWidth / 2)
     i = 0
     for key in dicoRobots:
-        dicoRobots[key].goal_theta = (tetaDotsDomain[i] + tetaDotsDomain[i + 1]) / 2
+        dicoRobots[key].goal_theta_rad = (tetaDotsDomain[i] + tetaDotsDomain[i + 1]) / 2
         dicoRobots[key].goal_d = _goal_d
         i += 1
         # ajout des domaines angles a respecter par chaque robot dans le dico

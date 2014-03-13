@@ -94,7 +94,7 @@ class SimpleSubscriber(object):
 
     def terminate(self):
         rospy.loginfo('Terminating %s', type(self).__name__)
-        self._sub.unsubscribe()
+        self._sub.unregister()
 
     def start(self):
         self._sub = rospy.Subscriber(self.topic, self.msg_type, self.update)

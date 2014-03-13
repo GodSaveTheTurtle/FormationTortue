@@ -13,14 +13,14 @@ import state
 from nav_msgs.msg import Odometry
 
 
-class MainThread(StateSwitcher):
+class SlaveMainThread(StateSwitcher):
 
-    def __init__(self, shared_data, target_sim=False, name='turtleX'):
-        if target_sim:
-            topic = '/{}/cmd_vel'.format(name)
+    def __init__(self, shared_data):
+        if shared_data.sim_mode:
+            topic = '/{}/cmd_vel'.format(shared_data.self_color)
         else:
             topic = '/cmd_vel_mux/input/teleop'
-        super(MainThread, self).__init__(shared_data, topic, Twist)
+        super(SlaveMainThread, self).__init__(shared_data, topic, Twist)
 
 
 class MasterListener(RosThread):
@@ -34,54 +34,61 @@ class MasterListener(RosThread):
 
     def start(self):
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._socket.connect((self._master_ip, self._shared_data.slave_port))
-        self._socket.send(self._shared_data.self_color)
-        super(MasterListener, self).start()
+        try:
+            self._socket.connect((self._master_ip, self._shared_data.slave_port))
+            rospy.loginfo('Sending: {}'.format(self._shared_data.self_color))
+            self._socket.send(self._shared_data.self_color)
+        except socket.error, e:
+            self._socket = None
+            rospy.logerr('Unable to connect to master. \nSocket error: {}'.format(e))
+        return super(MasterListener, self).start()
 
     def loop(self):
-        while self._running and not rospy.is_shutdown:
+        while self._socket and self._running and not rospy.is_shutdown:
             data = self._socket.recv(MasterListener.BUFFER_SIZE)
             self._shared_data.slaves[self._shared_data.self_color] = SlaveData(data)
-        self._socket.close()
+        if self._socket:
+            self._socket.close()
 
 
 class OdometrySubscriber(SimpleSubscriber):
-    def __init__(self):
+    def __init__(self, shared_data):
         # TODO if sim: use /turtleX/pose
         super(OdometrySubscriber, self).__init__('/odom', Odometry)
+        self._shared_data = shared_data
 
     def update(self, data):
         print data
 
 
-def setup():
+def setup_shared_data():
+    ''' Must be executed AFTER rospy.init_node so that get get_param calls properly work '''
+
     shared_data = Settings()
     shared_data.next_state = state.Obey
     shared_data.sim_mode = rospy.get_param('sim_mode', False)
+    shared_data.self_color = rospy.get_param('~name', 'turtleX')
+    shared_data.slaves[shared_data.self_color] = SlaveData()
     return shared_data
 
 
 if __name__ == '__main__':
-
-    shared_data = setup()
-
     try:
         rospy.init_node('slave')
-        name = rospy.get_param('~name', 'slave')
+        shared_data = setup_shared_data()
+        master_ip = rospy.get_param('master_ip', '127.0.0.1')
 
         if shared_data.sim_mode:
             from turtlesim.srv import Spawn
             rospy.wait_for_service('spawn')
             spawner = rospy.ServiceProxy('spawn', Spawn)
-            spawner(8, 5, 0, name)
+            spawner(8, 5, 0, shared_data.self_color)
             # TODO populate virtual slave data
 
-        rospy.loginfo(shared_data)
-        rospy.loginfo(name)
-
         threads = []
-        threads.append(MainThread(shared_data, shared_data.sim_mode, name).start())
-        threads.append(MasterListener(name, shared_data).start())
+        threads.append(SlaveMainThread(shared_data).start())
+        threads.append(OdometrySubscriber(shared_data).start())
+        threads.append(MasterListener(shared_data, master_ip).start())
 
         rospy.spin()  # waits until rospy.is_shutdown() is true (Ctrl+C)
 
@@ -94,4 +101,4 @@ if __name__ == '__main__':
 
         rospy.logdebug('All ok.')
     except rospy.ROSInterruptException:
-        pass
+        raise

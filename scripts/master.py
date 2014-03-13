@@ -60,6 +60,7 @@ class RemoteControlListener(RosThread):
 
 
 class SlaveSocketServer(object):
+    ''' Waits for all the slaves to be connected, in the current thread (blocks the rest of the execution '''
     BUFFER_SIZE = 256
 
     def __init__(self, shared_data):
@@ -78,15 +79,22 @@ class SlaveSocketServer(object):
             conn.close()
 
     def start(self):
+        ''' Note: blocks until all the slaves are connected '''
+
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._socket.bind(('0.0.0.0', self._shared_data.slave_port))
         self._socket.listen(self._shared_data.nb_slaves)
 
-        while self._shared_data.connected_slaves < self._shared_data.nb_slaves:
-            Thread(target=self._register_connection, args=self._socket.accept())
+        while self._shared_data.connected_slaves < self._shared_data.nb_slaves and not rospy.is_shutdown():
+            try:
+                Thread(target=self._register_connection, args=self._socket.accept())
+            except socket.error, e:
+                rospy.loginfo('Socket error: {}'.format(e))
+
+        return self
 
     def terminate(self):
-        self._socket.shutdown()  # Closes the connections
+        self._socket.shutdown(socket.SHUT_RDWR)  # Closes the connections
         self._socket.close()
 
     def join(self):
@@ -98,13 +106,16 @@ def setup():
     shared_data.next_state = state.RemoteControlled
     shared_data.sim_mode = rospy.get_param('sim_mode', False)
 
-    for slave_name in rospy.get_param('master/slaves', []):
+    slaves = rospy.get_param('master/slaves', [])
+    shared_data.nb_slaves = len(slaves)
+
+    for slave_name in slaves:
         shared_data.slaves[slave_name] = SlaveData()
+
     return shared_data
 
 
 if __name__ == '__main__':
-
     shared_data = setup()
 
     print shared_data
@@ -126,6 +137,7 @@ if __name__ == '__main__':
         for thread in threads:
             thread.terminate()
             thread.join()
+            print 'Terminated: {}'.format(type(thread).__name__)
 
         rospy.logdebug('All ok.')
 

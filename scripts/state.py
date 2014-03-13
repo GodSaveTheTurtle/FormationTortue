@@ -9,7 +9,7 @@ from detection_couleur import ColorTracking
 class State(object):
 
     def __init__(self, commands):
-        ''' Constructior, do stuff required when entering that state '''
+        ''' Constructor, do stuff required when entering that state '''
         commands.next_state = None
         pass
 
@@ -36,7 +36,9 @@ class RemoteControlled(State):
     def update(self, commands):
         super(RemoteControlled, self).update(commands)
 
-        if commands.has_obstacle:
+        if commands.connected_slaves < commands.nb_slaves:
+            rospy.loginfo('connected slaves: {}/{}'.format(commands.connected_slaves, commands.nb_slaves))
+        elif commands.has_obstacle:
             commands.next_state = Obstacle
         elif commands.visible_slaves != commands.nb_slaves:
             commands.next_state = Search
@@ -128,5 +130,7 @@ class Obey(State):
 
     def update(self, commands):
         super(Obey, self).update(commands)
-        testEsclave.main(commands.slaves[commands.self_color])
-        #TODO command stray slave
+        angle, speed = testEsclave.main(commands.slaves[commands.self_color])
+
+        commands.linear_spd = speed
+        commands.angular_spd = angle
