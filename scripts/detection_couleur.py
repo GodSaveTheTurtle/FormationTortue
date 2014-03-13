@@ -135,11 +135,8 @@ class ColorTracking():
         else:
             print 'Attente de recup profondeur'
 
-    def update_slave_positions(self, slave_data):
-        # TODO
-        pass
+    def __init__(self, slaves):
 
-    def __init__(self):
         #Init cvbridge
         self.bridge = CvBridge()
         #Init depth recup
@@ -149,6 +146,11 @@ class ColorTracking():
 
         #Init color tracking
         rospy.Subscriber('/camera/rgb/image_color', Image, self.kinect_color_listener)
+
+        #####
+        # TODO slaves: dico {'couleur':SlaveData...}
+        #####
+
 
 if __name__ == '__main__':
     # Init du noeud.

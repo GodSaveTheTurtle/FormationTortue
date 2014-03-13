@@ -30,7 +30,7 @@ class RemoteControlled(State):
 
     def __init__(self, commands):
         super(RemoteControlled, self).__init__(commands)
-        self._ctrack = ColorTracking()
+        self._ctrack = ColorTracking(commands.slaves)
         # TODO send something to the android client to display the joysticks
 
     def update(self, commands):
@@ -48,9 +48,6 @@ class RemoteControlled(State):
             self.notify_slaves(commands)
 
     def notify_slaves(self, commands):
-        # What do we see? Computations etc
-        self._ctrack.update_slave_positions(commands.slaves)
-
         # Compute instructions
         testFormation.run(commands.slaves)
         rospy.logdebug(commands.slaves)
