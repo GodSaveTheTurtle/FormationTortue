@@ -1,33 +1,22 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import rospy
-from geometry_msgs.msg import Twist
-from sensor_msgs.msg import Image
-import sys
-import tty
-import termios
-from cv_bridge import CvBridge, CvBridgeError
-import numpy as np
-import cv2
-import cv2.cv as cv
-from math import cos, sin, hypot, atan, degrees, radians, pi
 import testEsclave
 import time
 
+from data_utils import SlaveData
 
-numberOfRobots = 1
-goal_d = 3
+# Les variables censées être utilisées uniquement à l'intérieur du module (donc privées) doivent commencer par '_'
+_numberOfRobots = 1
+_goal_d = 3
 # distance centurion-legionaire en metres
-maximumDistance = goal_d * 1.1
+_maximumDistance = _goal_d * 1.1
 # tolere 10pourcent d'erreur en trop et en moins
-minimumDistance = goal_d * 0.9
-sightWidth = 57
+_minimumDistance = _goal_d * 0.9
+_sightWidth = 57
 # angle du champ de vision en degres
-tetaStep = sightWidth / numberOfRobots  # calcul du pas d'angle pour distribuer par la suite
-tetaTolerance = tetaStep / 3  # domaine de tolerance sur angle  tout robot depassant considere comme a corriger
-dicoRobots = {0: {'goal_theta': 0, 'goal_d': 0, 'theta': 0, 'd': 0}}
-regulationActivated = True
+_tetaStep = _sightWidth / _numberOfRobots  # calcul du pas d'angle pour distribuer par la suite
+_tetaTolerance = _tetaStep / 3  # domaine de tolerance sur angle  tout robot depassant considere comme a corriger
 
 
 def modeRegulation(dicoRobots):
@@ -38,12 +27,12 @@ def modeRegulation(dicoRobots):
 def robotPositionDomainSet(dicoRobots):
 # calcule les domaines d'angles a atteindre en fonction du dico de robots
     tetaDotsDomain = []
-    for i in range(int(len(dicoRobots)) + 1):
-        tetaDotsDomain.append(i * tetaStep - sightWidth / 2)
+    for i in range(len(dicoRobots) + 1):
+        tetaDotsDomain.append(i * _tetaStep - _sightWidth / 2)
     i = 0
     for key in dicoRobots:
-        dicoRobots[key]['goal_theta'] = (tetaDotsDomain[i] + tetaDotsDomain[i + 1]) / 2
-        dicoRobots[key]['goal_d'] = goal_d
+        dicoRobots[key].goal_theta = (tetaDotsDomain[i] + tetaDotsDomain[i + 1]) / 2
+        dicoRobots[key].goal_d = _goal_d
         i += 1
         # ajout des domaines angles a respecter par chaque robot dans le dico
     #print('positionDomain:', dicoRobots)
@@ -51,8 +40,8 @@ def robotPositionDomainSet(dicoRobots):
 
 def test():
     dicoRobots = {
-        'yellow': {'goal_theta': 0, 'goal_d': 0, 'theta': 0, 'd': 0},
-        'pink': {'goal_theta': 0, 'goal_d': 0, 'theta': 0, 'd': 0}
+        'yellow': SlaveData(),
+        'pink': SlaveData()
     }
 
     run(dicoRobots)
