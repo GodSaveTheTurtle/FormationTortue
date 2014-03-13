@@ -54,17 +54,20 @@ class Settings(Printable):
 
 class SlaveData(Printable):
 
-    def __init__(self, str_repr=None):
+    def __init__(self):
         super(SlaveData, self).__init__()
-
-        if str_repr:
-            pass  # TODO
-
         self.d = 0              # from Kinect
         self.theta_rad = 0      # from Kinect
         self.goal_d = 0
         self.goal_theta_rad = 0
         self.conn = None
+
+    def update_from_string(self, str_repr):
+        tmp = str_repr.split(' ')
+        self.d = float(tmp[0])
+        self.theta_rad = float(tmp[1])
+        self.goal_d = float(tmp[2])
+        self.goal_theta_rad = float(tmp[3])
 
     def send(self):
         if self.conn:

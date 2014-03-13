@@ -7,7 +7,7 @@ import socket
 import rospy
 from geometry_msgs.msg import Twist
 
-from settings import Settings, SlaveData
+from data_utils import Settings, SlaveData
 from thread_utils import StateSwitcher, RosThread, SimpleSubscriber
 import state
 from nav_msgs.msg import Odometry
@@ -57,8 +57,8 @@ class MasterListener(RosThread):
             data = self._socket.recv(MasterListener.BUFFER_SIZE)
             if not data:  # Other end of the socket disconnected
                 self._running = False
-            rospy.logdebug('recv %s', data)
-            self._shared_data.slaves[self._shared_data.self_color] = SlaveData(data)
+            rospy.logdebug('Instruction read by slave: %s', data)
+            self._shared_data.slaves[self._shared_data.self_color].update_from_string(data)
         if self._socket:
             self._socket.close()
 
