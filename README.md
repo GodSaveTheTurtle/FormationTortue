@@ -65,4 +65,5 @@ Creating symlink "/home/.../catkin_ws/CMakeLists.txt" pointing to "/opt/ros/hydr
 2. Initialisation du workspace
 3. Construction du package. Le but ici est principalement de récupérer le fichier setup, puisqu'on ne compile pas le python.
 4. Charger le fichier setup. Il y en a différents disponibles, suivant le type de shell qu'on préfère. Il peut être pratique d'ajouter cette ligne (en corrigeant le chemin bien sûr) au .bashrc pour éviter de le faire à chaque création de shell.
+5. Peut ça change peut être rien d'être ou pas dans le package...
 6. Lancement du noeud maitre
