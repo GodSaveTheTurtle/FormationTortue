@@ -195,7 +195,7 @@ def main(dicoRobots, cap=0):
     """
     time_out = distanceToObjective * 1.5  # temps laisse au robot pour atteindre l'objectif
     angle = pi / 2 / time_out  # si la vitesse est en quart de tours par minute, a verifier pour obtenir correlation
-    speed = pi / 2 * sqrt(pow(distanceToObjective, 2) / 2)  # but : faire parcourir un quart de cercle au robot
+    speed = pi / 2 * sqrt(pow(distanceToObjective, 2) / 2) / time_out # but : faire parcourir un quart de cercle au robot
 
 
     # return (angle, speed) # pour twist: x de linear speed (m/s), z de angular speed (rad/s)
