@@ -27,8 +27,8 @@ class State(object):
 ### Master States
 
 class RemoteControlled(State):
-    LIN_SPEED_MULT = 1/75.0  # Multiplier for the linear speed (input is bewteen -100 and +100)
-    ANG_SPEED_MULT = 1/40.0  # Multiplier for the angular speed (input is bewteen -100 and +100)
+    LIN_SPEED_MULT = 1/500.0  # Multiplier for the linear speed (input is bewteen -100 and +100)
+    ANG_SPEED_MULT = 1/75.0  # Multiplier for the angular speed (input is bewteen -100 and +100)
 
     def __init__(self, commands):
         super(RemoteControlled, self).__init__(commands)
@@ -137,12 +137,11 @@ class Obey(State):
     def update(self, commands):
         super(Obey, self).update(commands)
 
-        # rospy.loginfo('in: %s', commands.slaves[commands.self_color])
+        rospy.logdebug('in: %s', commands.slaves[commands.self_color])
 
-        print commands.orientation
         angle, speed = testEsclave.main(commands.slaves[commands.self_color], commands.orientation)
 
-        # rospy.loginfo('out: {angle: %f, speed: %f}', angle, speed)
+        rospy.logdebug('out: {angle: %f, speed: %f}', angle, speed)
 
         commands.linear_spd = speed
         commands.angular_spd = angle

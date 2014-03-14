@@ -83,6 +83,7 @@ class SlaveSocketServer(object):
         data = conn.recv(SlaveSocketServer.BUFFER_SIZE)
 
         try:
+            data = data.replace('\n', '')  # When sent by netcat, '\n' is added at the end of the message
             self._shared_data.slaves[Color.reverse_mapping[data]].conn = conn
             rospy.loginfo('Registered the %s slave', data)
             self._shared_data.connected_slaves += 1
@@ -121,7 +122,7 @@ def setup():
     shared_data.next_state = state.RemoteControlled
     shared_data.sim_mode = rospy.get_param('sim_mode', False)
 
-    slaves = rospy.get_param('master/slaves', ['yellow'])
+    slaves = rospy.get_param('master/slaves', [])
     shared_data.nb_slaves = len(slaves)
     shared_data.visible_slaves = len(slaves)  # To disable switch to search mode
 

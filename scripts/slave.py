@@ -88,6 +88,9 @@ def setup_shared_data():
     shared_data.sim_mode = rospy.get_param('sim_mode', False)
     shared_data.self_color = rospy.get_param('~name', 'turtleX')
     shared_data.slaves[shared_data.self_color] = SlaveData()
+
+    if shared_data.sim_mode:
+        shared_data.spawn_position = rospy.get_param('~spawn_position', [5, 7])
     return shared_data
 
 
@@ -101,7 +104,7 @@ if __name__ == '__main__':
             from turtlesim.srv import Spawn
             rospy.wait_for_service('spawn')
             spawner = rospy.ServiceProxy('spawn', Spawn)
-            spawner(8, 5, 0, shared_data.self_color)
+            spawner(shared_data.spawn_position[0], shared_data.spawn_position[1], 0, shared_data.self_color)
             # TODO populate virtual slave data
 
         threads = []
