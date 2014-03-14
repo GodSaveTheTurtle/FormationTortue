@@ -11,6 +11,7 @@ from data_utils import Settings, SlaveData
 from thread_utils import StateSwitcher, RosThread, SimpleSubscriber
 import state
 from nav_msgs.msg import Odometry
+from turtlesim.msg import Pose
 
 
 class SlaveMainThread(StateSwitcher):
@@ -65,12 +66,18 @@ class MasterListener(RosThread):
 
 class OdometrySubscriber(SimpleSubscriber):
     def __init__(self, shared_data):
-        # TODO if sim: use /turtleX/pose
-        super(OdometrySubscriber, self).__init__('/odom', Odometry)
+        if shared_data.sim_mode:
+            topic = '/{}/pose'.format(shared_data.self_color)
+            topic_type = Pose
+        else:
+            topic = '/odom'
+            topic_type = Odometry
+        super(OdometrySubscriber, self).__init__(topic, topic_type)
         self._shared_data = shared_data
 
     def update(self, data):
-        rospy.loginfo(data)
+        rospy.logdebug('Odometry data: %s', data)
+        self._shared_data.orientation = data.theta
 
 
 def setup_shared_data():

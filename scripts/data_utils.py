@@ -47,6 +47,7 @@ class Settings(Printable):
         self.slave_port = 1338
         self.control_port = 1337
         self.self_color = None  # To be used only in slaves
+        self.orientation = 0
         self.slaves = {
             ## Format: 'color': SlaveData
         }
