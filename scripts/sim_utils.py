@@ -44,7 +44,7 @@ class TurtleSimTracker(RosThread):
                     # math.degrees((self.slave_data[sn].theta_rad + master_pose.theta) % (2*math.pi))
                     # (math.degrees(self.slave_data[sn].theta_rad) + math.degrees(master_pose.theta)) % 360
                 # )
-                self.slave_data[sn].theta_rad = (self.slave_data[sn].theta_rad - master_pose.theta) % (2*math.pi)
+                self.slave_data[sn].theta_rad = (master_pose.theta - self.slave_data[sn].theta_rad) % (2*math.pi)
 
 
 class PoseSubscriber(SimpleSubscriber):

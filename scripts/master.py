@@ -120,6 +120,7 @@ def setup():
     shared_data = Settings()
     shared_data.next_state = state.RemoteControlled
     shared_data.sim_mode = rospy.get_param('sim_mode', False)
+    shared_data.self_color = 'turtle1'
 
     slaves = rospy.get_param('master/slaves', [])
     shared_data.nb_slaves = len(slaves)

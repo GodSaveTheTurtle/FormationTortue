@@ -13,6 +13,7 @@ from controller import DirectionalKeyListener
 
 
 class RosThread(object):
+
     '''
     Creates a thread calling the update() method at the chosen frequency.
     Override loop() to change the function used as target for the thread
@@ -62,9 +63,10 @@ class ThreadedPublisher(RosThread):
 
 
 class StateSwitcher(ThreadedPublisher):
+
     ''' Handles switching threads and updating the current thread '''
 
-    def __init__(self, shared_data, topic=None, msg_type=None, freq=1/10.0, name='turtleX'):
+    def __init__(self, shared_data, topic=None, msg_type=None, freq=1 / 10.0, name='turtleX'):
         super(StateSwitcher, self).__init__(topic, msg_type, freq)
         self._shared_data = shared_data
         self._state = None
@@ -81,6 +83,7 @@ class StateSwitcher(ThreadedPublisher):
 
 
 class SimpleSubscriber(object):
+
     ''' Uses the same interface as RosThread/ThreadedPublisher for simplicity in calling code '''
 
     def __init__(self, topic, msg_type, handler=None):
@@ -109,11 +112,11 @@ class SimpleSubscriber(object):
         pass
 
 
-<<<<<<< Updated upstream
 class OdometrySubscriber(SimpleSubscriber):
+
     def __init__(self, shared_data):
         if shared_data.sim_mode:
-            topic = '/turtle1/pose'
+            topic = '/{}/pose'.format(shared_data.self_color)
             topic_type = Pose
         else:
             topic = '/odom'
@@ -127,11 +130,8 @@ class OdometrySubscriber(SimpleSubscriber):
         self._shared_data.orientation = data.theta
 
 
-class LedController(ThreadedPublisher):
-=======
+#class LedController(ThreadedPublisher):
 # class LedController(ThreadedPublisher):
->>>>>>> Stashed changes
-
 #     def __init__(self):
 #         super(LedController, self).__init__('/mobile_base/commands/led1', Led)
 #         self.color = 0
@@ -172,7 +172,7 @@ class DirectionController(ThreadedPublisher):
             topic = '/turtle1/cmd_vel'
         else:
             topic = '/cmd_vel_mux/input/teleop'
-        super(DirectionController, self).__init__(topic, Twist, 1/10.0)
+        super(DirectionController, self).__init__(topic, Twist, 1 / 10.0)
         self.key_listener = DirectionalKeyListener(callback=self.on_key_pressed,
                                                    direction_mappings=DirectionController.KEY_BINDINGS)
 
