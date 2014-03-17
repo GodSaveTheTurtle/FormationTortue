@@ -123,8 +123,11 @@ class OdometrySubscriber(SimpleSubscriber):
     def update(self, data):
         rospy.logdebug('Odometry data: %s', data)
         # TODO read from /odom
-        self._shared_data.orientation = data.theta
-
+	if self._shared_data.sim_mode:
+        	self._shared_data.orientation = data.theta
+	else:
+        	self._shared_data.orientation = data.pose.pose.orientation.w
+		
 
 class LedController(ThreadedPublisher):
 
