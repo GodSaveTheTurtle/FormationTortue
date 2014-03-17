@@ -199,5 +199,46 @@ def main(dicoRobots, cap=0):
 
         return (angle, speed)  # pour twist: x de linear speed (m/s), z de angular speed (rad/s)
 
+
+import math
+
+
+def min_angle(angle_rad):
+    if angle_rad < -math.pi:
+        return 2*math.pi + angle_rad
+    elif angle_rad > math.pi:
+        return angle_rad - 2*math.pi
+    else:
+        return angle_rad
+
+
+mode_regulation = False
+REGULATION_MIN_ANGLE = math.radians(15)
+REGULATION_TRANSITION_ANGLE = math.radians(45)
+
+
+def bleh(dicoRobots, cap):
+    global mode_regulation
+    ang_spd, lin_spd = 0, 0
+
+    delta_cap = min_angle(dicoRobots.master_theta_rad) - min_angle(cap)
+    delta_theta = min_angle(dicoRobots.theta_rad) - min_angle(dicoRobots.goal_theta_rad)
+
+    # print delta_cap, math.degrees(delta_cap), cap
+
+    mode_regulation = ((mode_regulation or math.fabs(delta_cap) > REGULATION_TRANSITION_ANGLE) and
+                       not math.fabs(delta_cap) < REGULATION_MIN_ANGLE)
+
+    if mode_regulation:
+        ang_spd = delta_cap
+        lin_spd = 0
+    else:
+        ang_spd = delta_theta
+        lin_spd = math.fabs(dicoRobots.d - dicoRobots.goal_d)
+
+    # print ang_spd, lin_spd, mode_regulation
+
+    return ang_spd, lin_spd
+
 if __name__ == '__main__':
     main()

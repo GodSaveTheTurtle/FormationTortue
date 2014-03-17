@@ -137,11 +137,11 @@ class Obey(State):
     def update(self, commands):
         super(Obey, self).update(commands)
 
-        rospy.logdebug('in: %s', commands.slaves[commands.self_color])
+        rospy.loginfo('in: %s', commands.slaves[commands.self_color])
 
-        angle, speed = testEsclave.main(commands.slaves[commands.self_color], commands.orientation)
+        angle, speed = testEsclave.bleh(commands.slaves[commands.self_color], commands.orientation)
 
-        rospy.logdebug('out: {angle: %f, speed: %f}', angle, speed)
+        rospy.loginfo('out: {angle: %f, speed: %f}', angle, speed)
 
         commands.linear_spd = speed
         commands.angular_spd = angle

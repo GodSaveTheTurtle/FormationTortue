@@ -58,7 +58,6 @@ class MasterListener(RosThread):
                 self._running = False
             rospy.logdebug('Instruction read by slave: %s', data)
             self._shared_data.slaves[self._shared_data.self_color].update_from_string(data)
-            print self._shared_data.slaves[self._shared_data.self_color]
         if self._socket:
             self._socket.close()
 

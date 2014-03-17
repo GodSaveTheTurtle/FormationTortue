@@ -112,7 +112,7 @@ class SimpleSubscriber(object):
 class OdometrySubscriber(SimpleSubscriber):
     def __init__(self, shared_data):
         if shared_data.sim_mode:
-            topic = '/turtle1/pose'
+            topic = '/{}/pose'.format(shared_data.self_color)
             topic_type = Pose
         else:
             topic = '/odom'
