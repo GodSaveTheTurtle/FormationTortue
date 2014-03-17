@@ -2,7 +2,7 @@ import rospy
 
 from threading import Thread
 
-from kobuki_msgs.msg import Led
+#from kobuki_msgs.msg import Led
 from geometry_msgs.msg import Twist
 from geometry_msgs.msg import Vector3
 from nav_msgs.msg import Odometry
@@ -109,6 +109,7 @@ class SimpleSubscriber(object):
         pass
 
 
+<<<<<<< Updated upstream
 class OdometrySubscriber(SimpleSubscriber):
     def __init__(self, shared_data):
         if shared_data.sim_mode:
@@ -127,14 +128,17 @@ class OdometrySubscriber(SimpleSubscriber):
 
 
 class LedController(ThreadedPublisher):
+=======
+# class LedController(ThreadedPublisher):
+>>>>>>> Stashed changes
 
-    def __init__(self):
-        super(LedController, self).__init__('/mobile_base/commands/led1', Led)
-        self.color = 0
+#     def __init__(self):
+#         super(LedController, self).__init__('/mobile_base/commands/led1', Led)
+#         self.color = 0
 
-    def update(self):
-        self.color = (self.color + 1) % 4
-        self.publish(self.color)
+#     def update(self):
+#         self.color = (self.color + 1) % 4
+#         self.publish(self.color)
 
 
 class DirectionController(ThreadedPublisher):

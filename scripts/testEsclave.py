@@ -145,58 +145,63 @@ def main(dicoRobots, cap=0):
     # for i in range(len(dicoRobots)):
     currentSpeed = 0
     currentCap = 0
-    teta1 = radians(dicoRobots.goal_theta_rad)
-    teta2 = radians(dicoRobots.theta_rad)
-    D1 = dicoRobots.goal_d
-    D2 = dicoRobots.d
-    # if teta2 > teta1:  # compare teta and tetaSetPoint for the pi/2 shift due to the fact that -pi/2<atan<pi/2
+    theta2 = min(dicoRobots.goal_theta_rad, 2 * pi - dicoRobots.goal_theta_rad)
+    theta1 = min(dicoRobots.theta_rad, 2 * pi - dicoRobots.theta_rad)
+    D2 = dicoRobots.goal_d
+    D1 = dicoRobots.d
+    master_cap = dicoRobots.master_theta_rad
+    # if theta2 > theta1:  # compare teta and tetaSetPoint for the pi/2 shift due to the fact that -pi/2<atan<pi/2
     #     angleShift = pi / 2
     # else:
     #     angleShift = -pi / 2
-    ######
+    #
     # TODO: Erreur: division par 0
-    ######
+    #
     # setCap = degrees(
-    #     angleShift - atan((D2 * cos(teta2) - D1 * cos(teta1)) / (D2 * sin(teta2) - D1 * sin(teta1)))) / 180
-    distanceToObjective = hypot((D1 * cos(teta1) - D2 * cos(teta2)), (
-        D1 * sin(teta1) - D2 * sin(teta2))) / maximumSpeed
+    #     angleShift - atan((D2 * cos(theta2) - D1 * cos(theta1)) / (D2 * sin(theta2) - D1 * sin(theta1)))) / 180
 
-    """
-    print('setCap', i, setCap)
-    print('speed', i, setSpeed)
-    pidForSpeed = PID(0.5, 0.4, 0.5, 10)   # P, I, D
-    pidForSpeed.setPoint(setSpeed)  # valeur a suivre
-    processForSpeed = firstOrder(0.5, 5)
+    distanceToObjective = hypot((D2 * sin(theta2) - D1 * sin(theta1)), (
+        D2 * cos(theta2) - D1 * cos(theta1)))
+    X_projection = D2 * cos(theta2) - D1 * cos(theta1)
+    Y_projection = D2 * sin(theta2) - D1 * sin(theta1)
+    if X_projection == 0 or Y_projection == 0:
+        angle_to_objective = 0
+    elif X_projection > 0:
+        if Y_projection > 0:
+            angle_to_objective = master_cap + atan(Y_projection / X_projection) % (2 * pi)
+        else:
+            angle_to_objective = master_cap + (-pi / 2 + atan(abs(Y_projection / X_projection))) % (2 * pi)
+    elif X_projection < 0:
+        if Y_projection > 0:
+            angle_to_objective = master_cap + (pi - atan(abs(Y_projection / X_projection))) % (2 * pi)
+        else:
+            angle_to_objective = master_cap + (-pi + atan(abs(Y_projection / X_projection))) % (2 * pi)
+        #angle_to_objective = (copysign(Y_projection, 1) * (pi - atan(Y_projection / -X_projection))) % (2 * pi)
+    time_out = distanceToObjective * 3  # temps laisse au robot pour atteindre l'objectif
 
-    pidForCap = PID(0.5, 0.4, 0.5, 1)   # P, I, D
-    pidForCap.setPoint(setCap)   # valeur a suivre
-    processForCap = firstOrder(0.5, 1)
-    N = 10
-    while N > 0:
-        flowSpeed = pidForSpeed.update(currentSpeed)
-        processForSpeed.setPoint(flowSpeed)
-        currentSpeed = processForSpeed.update(currentSpeed)
-        flowCap = pidForCap.update(currentCap)
-        processForCap.setPoint(flowCap)
-        currentCap = processForCap.update(currentCap)
-        print('sCap', setCap, 'cCap', currentCap)
-        print('sSpeed', setSpeed, 'cSpeed', currentSpeed)
-        updatePosition(currentSpeed, currentCap, dicoRobots)
-        #time.sleep(0.1)
-        N = N - 1
-        print(N)
-    """
-    time_out = distanceToObjective * 1.5  # temps laisse au robot pour atteindre l'objectif
-
-    if time_out == 0:
-        return 0, 0
+    if time_out < 0.5:
+        angle = 0
+        speed = 0
+        print('angle:', degrees(angle_to_objective), 'cap', degrees(cap))
+        return (angle, speed)
     else:
-        # si la vitesse est en quart de tours par minute, a verifier pour obtenir correlation
-        angle = pi / 2 / time_out
-
+        # vitesse en rad/s
+        if cap > angle_to_objective * 1.1:
+            angle = -abs(cap - angle_to_objective)
+        elif cap < angle_to_objective * 0.9:
+            angle = abs(cap - angle_to_objective)
+        else:
+            angle = 0
         # but : faire parcourir un quart de cercle au robot
-        speed = pi / 2 * sqrt(pow(distanceToObjective, 2) / 2) / time_out
-
+        if angle == 0 and distanceToObjective > 0.25:
+            speed = distanceToObjective / 4  # angle_to_objective * sqrt(pow(distanceToObjective, 2) / 2) / time_out
+        else:
+            speed = 0
+        print('angle2obj:', degrees(angle_to_objective), 'cap', degrees(cap))
+        print('teta_robot', degrees(dicoRobots.theta_rad))
+        print(dicoRobots)
+        print('angle', degrees(angle), 'speed', speed)
+        print('distance2obj', distanceToObjective)
         return (angle, speed)  # pour twist: x de linear speed (m/s), z de angular speed (rad/s)
 
 if __name__ == '__main__':
