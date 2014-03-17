@@ -5,6 +5,9 @@ from threading import Thread
 from kobuki_msgs.msg import Led
 from geometry_msgs.msg import Twist
 from geometry_msgs.msg import Vector3
+from nav_msgs.msg import Odometry
+from turtlesim.msg import Pose
+
 
 from controller import DirectionalKeyListener
 
@@ -104,6 +107,23 @@ class SimpleSubscriber(object):
 
     def join(self):
         pass
+
+
+class OdometrySubscriber(SimpleSubscriber):
+    def __init__(self, shared_data):
+        if shared_data.sim_mode:
+            topic = '/turtle1/pose'
+            topic_type = Pose
+        else:
+            topic = '/odom'
+            topic_type = Odometry
+        super(OdometrySubscriber, self).__init__(topic, topic_type)
+        self._shared_data = shared_data
+
+    def update(self, data):
+        rospy.logdebug('Odometry data: %s', data)
+        # TODO read from /odom
+        self._shared_data.orientation = data.theta
 
 
 class LedController(ThreadedPublisher):

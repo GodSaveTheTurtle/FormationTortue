@@ -4,7 +4,6 @@ import testFormation
 import testEsclave
 
 from detection_couleur import ColorTracking
-from thread_utils import SimpleSubscriber
 from sim_utils import TurtleSimTracker
 
 
@@ -62,6 +61,7 @@ class RemoteControlled(State):
         # Send to slaves
         for slave in commands.slaves:
             slave_data = commands.slaves[slave]
+            slave_data.master_theta_rad = commands.orientation
             slave_data.send()
 
     def end(self, commands):

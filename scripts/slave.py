@@ -8,10 +8,8 @@ import rospy
 from geometry_msgs.msg import Twist
 
 from data_utils import Settings, SlaveData
-from thread_utils import StateSwitcher, RosThread, SimpleSubscriber
+from thread_utils import StateSwitcher, RosThread, OdometrySubscriber
 import state
-from nav_msgs.msg import Odometry
-from turtlesim.msg import Pose
 
 
 class SlaveMainThread(StateSwitcher):
@@ -60,24 +58,9 @@ class MasterListener(RosThread):
                 self._running = False
             rospy.logdebug('Instruction read by slave: %s', data)
             self._shared_data.slaves[self._shared_data.self_color].update_from_string(data)
+            print self._shared_data.slaves[self._shared_data.self_color]
         if self._socket:
             self._socket.close()
-
-
-class OdometrySubscriber(SimpleSubscriber):
-    def __init__(self, shared_data):
-        if shared_data.sim_mode:
-            topic = '/{}/pose'.format(shared_data.self_color)
-            topic_type = Pose
-        else:
-            topic = '/odom'
-            topic_type = Odometry
-        super(OdometrySubscriber, self).__init__(topic, topic_type)
-        self._shared_data = shared_data
-
-    def update(self, data):
-        rospy.logdebug('Odometry data: %s', data)
-        self._shared_data.orientation = data.theta
 
 
 def setup_shared_data():

@@ -61,16 +61,20 @@ class SlaveData(Printable):
         self.theta_rad = 0      # from Kinect
         self.goal_d = 0
         self.goal_theta_rad = 0
+        self.master_theta_rad = 0
         self.conn = None
 
     def update_from_string(self, str_repr):
-        tmp = str_repr.split(' ')
-        self.d = float(tmp[0])
-        self.theta_rad = float(tmp[1])
-        self.goal_d = float(tmp[2])
-        self.goal_theta_rad = float(tmp[3])
+        if str_repr:
+            tmp = str_repr.split(' ')
+            self.d = float(tmp[0])
+            self.theta_rad = float(tmp[1])
+            self.goal_d = float(tmp[2])
+            self.goal_theta_rad = float(tmp[3])
+            self.master_theta_rad = float(tmp[4])
 
     def send(self):
         if self.conn:
-            msg = '{} {} {} {}'.format(self.d, self.theta_rad, self.goal_d, self.goal_theta_rad)
+            msg = '{} {} {} {} {}'.format(
+                self.d, self.theta_rad, self.goal_d, self.goal_theta_rad, self.master_theta_rad)
             self.conn.send(msg)

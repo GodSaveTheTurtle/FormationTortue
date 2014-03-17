@@ -2,13 +2,12 @@
 
 from __future__ import division
 import socket
-from threading import Thread
 
 import rospy
 from geometry_msgs.msg import Twist
 
 import state
-from thread_utils import RosThread, StateSwitcher
+from thread_utils import RosThread, StateSwitcher, OdometrySubscriber
 from data_utils import Settings, SlaveData, Color
 
 
@@ -142,6 +141,7 @@ if __name__ == '__main__':
         threads = []
 
         threads.append(SlaveSocketServer(shared_data).start())
+        threads.append(OdometrySubscriber(shared_data).start())
         threads.append(MainThread(shared_data).start())
         threads.append(RemoteControlListener(shared_data).start())
 
