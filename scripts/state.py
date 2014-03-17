@@ -1,13 +1,16 @@
-import testFormation
 import rospy
 
-from formation.msg import Instruction
+import testFormation
+import testEsclave
+
+from detection_couleur import ColorTracking
+from sim_utils import TurtleSimTracker
 
 
 class State(object):
 
     def __init__(self, commands):
-        ''' Constructior, do stuff required when entering that state '''
+        ''' Constructor, do stuff required when entering that state '''
         commands.next_state = None
         pass
 
@@ -20,27 +23,26 @@ class State(object):
         pass
 
 
+### Master States
+
 class RemoteControlled(State):
-    LIN_SPEED_MULT = 1/75.0  # Multiplier for the linear speed (input is bewteen -100 and +100)
-    ANG_SPEED_MULT = 1/40.0  # Multiplier for the angular speed (input is bewteen -100 and +100)
+    LIN_SPEED_MULT = 1/500.0  # Multiplier for the linear speed (input is bewteen -100 and +100)
+    ANG_SPEED_MULT = 1/75.0  # Multiplier for the angular speed (input is bewteen -100 and +100)
 
     def __init__(self, commands):
         super(RemoteControlled, self).__init__(commands)
-        self.dicoRobots = []
-        for slave in commands.slaves:
-            self.dicoRobots.append({
-                'tetaSetPoint': 0,
-                'setDistance': 0,
-                'teta': commands.slaves[slave]['angle'],
-                'D': commands.slaves[slave]['distance']
-            })
-        testFormation.robotPositionDomainSet(self.dicoRobots)
+        if commands.sim_mode:
+            self._ctrack = TurtleSimTracker(commands.slaves).start()
+        else:
+            self._ctrack = ColorTracking(commands.slaves)
         # TODO send something to the android client to display the joysticks
 
     def update(self, commands):
         super(RemoteControlled, self).update(commands)
 
-        if commands.has_obstacle:
+        if commands.connected_slaves < commands.nb_slaves:
+            rospy.loginfo('connected slaves: %d/%d', commands.connected_slaves, commands.nb_slaves)
+        elif commands.has_obstacle:
             commands.next_state = Obstacle
         elif commands.visible_slaves != commands.nb_slaves:
             commands.next_state = Search
@@ -51,24 +53,22 @@ class RemoteControlled(State):
 
             self.notify_slaves(commands)
 
-    def end(self, commands):
-        super(RemoteControlled, self).end(commands)
-        self.commands.linear_spd = 0
-        self.commands.angular_spd = 0
-
     def notify_slaves(self, commands):
-        # What do we see? Computations etc
-        # TODO
-
         # Compute instructions
-        testFormation.modeRegulation(self.dicoRobots)
-        # testFormation.regulationMessagesFlow(self.dicoRobots)
-        rospy.logdebug(self.dicoRobots)
+        testFormation.run(commands.slaves)
+        rospy.logdebug(commands.slaves)
 
         # Send to slaves
         for slave in commands.slaves:
-            commands.slaves[slave]['pub'].publish(
-                Instruction(self.dicoRobots[0]['tetaSetPoint'], self.dicoRobots[0]['setDistance']))
+            slave_data = commands.slaves[slave]
+            slave_data.master_theta_rad = commands.orientation
+            slave_data.send()
+
+    def end(self, commands):
+        super(RemoteControlled, self).end(commands)
+        self._ctrack = None  # TODO: is there something to stop?
+        commands.linear_spd = 0
+        commands.angular_spd = 0
 
 
 class Obstacle(State):
@@ -117,6 +117,8 @@ class Escort(State):
         #TODO command stray slave
 
 
+### Slave States
+
 class Wait(State):
     def __init__(self, commands):
         super(Wait, self).__init__(commands)
@@ -134,4 +136,12 @@ class Obey(State):
 
     def update(self, commands):
         super(Obey, self).update(commands)
-        #TODO command stray slave
+
+        rospy.loginfo('in: %s', commands.slaves[commands.self_color])
+
+        angle, speed = testEsclave.bleh(commands.slaves[commands.self_color], commands.orientation)
+
+        rospy.loginfo('out: {angle: %f, speed: %f}', angle, speed)
+
+        commands.linear_spd = speed
+        commands.angular_spd = angle

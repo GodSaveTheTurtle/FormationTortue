@@ -10,7 +10,7 @@ FOV_Y_ORIGIN = 100
 FOV_Y_SIZE = 100
 
 
-class ColorTracking():
+class ColorTracking(object):
     hsv_colors = {
         'yellow': {'min': cv.Scalar(20, 100, 100), 'max': cv.Scalar(35, 255, 255)},
         'pink': {'min': cv.Scalar(140, 50, 50), 'max': cv.Scalar(160, 255, 255)},
@@ -80,8 +80,9 @@ class ColorTracking():
         img_centroids = cv.CreateImage(ROI_frame_size, 8, 3)
         cv.SetZero(img_centroids)
 
-        for i in range(NB_ROBOTS):
-            imgthresh = self.get_thresholded_img(img_hsv, self.param_robots[i]['color'])
+        # Get color to search
+        for slave_color in self.slaves:
+            imgthresh = self.get_thresholded_img(img_hsv, slave_color)
             cv.Erode(imgthresh, imgthresh, None, 3)
             cv.Dilate(imgthresh, imgthresh, None, 10)
             storage = cv.CreateMemStorage(0)
@@ -105,16 +106,23 @@ class ColorTracking():
                 centroidy = cv.Round((pt1[1] + pt2[1]) / 2)
                 centroids = (centroidx, centroidy)
 
+                # Draw centroid
                 cv.Circle(img_centroids, centroids, 25, (0, 255, 255))
 
+                # Get depth and angle of centroid
                 angle = self.angle_calculation(ROI_frame_size[0], centroidx)
-                angledeg = angle / math.pi * 180
-
                 depth = self.find_depth(centroidx, centroidy)
 
-                print self.param_robots[i]['color'] + ' posx: ' + str(centroidx) \
-                    + ' angle: '+str(angledeg) \
+                # Refresh slaves data
+                self.slaves[slave_color].d = depth
+                self.slaves[slave_color].theta_rad = angle
+
+                # TRACE
+                print slave_color + ' posx: ' + str(centroidx) \
+                    + ' angle: '+str(angle / math.pi * 180) \
                     + ' dist ' + str(depth)
+
+        # Display FOV and centroids
         self.print_images(ROI_frame, img_centroids)
 
     def kinect_depth_listener(self, msg):
@@ -135,11 +143,14 @@ class ColorTracking():
         else:
             print 'Attente de recup profondeur'
 
-    def __init__(self):
-        #Init du noeud
-        rospy.init_node('kinect_color_tracking', anonymous=True)
+    def __init__(self, slaves):
+
         #Init cvbridge
         self.bridge = CvBridge()
+
+        #Init slaves
+        self.slaves = slaves
+
         #Init depth recup
         self.is_depth_initialized = False
         self.depth_image = None
@@ -147,7 +158,10 @@ class ColorTracking():
 
         #Init color tracking
         rospy.Subscriber('/camera/rgb/image_color', Image, self.kinect_color_listener)
-        rospy.spin()
+
 
 if __name__ == '__main__':
-    ctrack = ColorTracking()
+    # Init du noeud.
+    rospy.init_node('kinect_color_tracking', anonymous=True)
+    #ctrack = ColorTracking()
+    rospy.spin()

@@ -1,25 +1,16 @@
 #!/usr/bin/env python
-# -*- coding: ascii -*-
-import rospy
-from geometry_msgs.msg import Twist
-from sensor_msgs.msg import Image
-import sys
-import tty
-import termios
-from cv_bridge import CvBridge, CvBridgeError
-import numpy as np
-import cv2
-import cv2.cv as cv
-import time
-from math import cos, sin, hypot, atan, degrees, radians, pi, copysign
+# -*- coding: utf-8 -*-
 
+from math import cos, sin, hypot, atan, degrees, radians, pi, copysign, sqrt, pow
 
-# The recipe gives simple implementation of a Discrete Proportional-Integral-Derivative (PID) controller. PID controller gives output value for error between desired reference input and measurement feedback to minimize error value.
+# The recipe gives simple implementation of a Discrete Proportional-Integral-Derivative (PID) controller.
+# PID controller gives output value for error between desired reference input and measurement feedback to
+# minimize error value.
 # More information: http://en.wikipedia.org/wiki/PID_controller
 #
 # cnr437@gmail.com
 #
-# Example	#########
+# Example   #########
 #
 # p=PID(3.0,0.4,1.2)
 # p.setPoint(5.0)
@@ -28,13 +19,13 @@ from math import cos, sin, hypot, atan, degrees, radians, pi, copysign
 #
 #
 
-i = 0
 maximumSpeed = 10
 
 
 class PID:
 
-    def __init__(self, P=2.0, I=0.0, D=1.0, PIDMax=5, Derivator=0, Integrator=0, Integrator_max=500, Integrator_min=-500):
+    def __init__(self, P=2.0, I=0.0, D=1.0, PIDMax=5, Derivator=0,
+                 Integrator=0, Integrator_max=500, Integrator_min=-500):
         self.Kp = P
         self.Ki = I
         self.Kd = D
@@ -104,6 +95,7 @@ class firstOrder:
         self.set_point = 0.0
         self.error = 0.0
         self.maxFlow = maxF
+
     def update(self, current_value):
         flowMeasured = current_value + \
             (self.set_point - current_value) * self.G + (self.set_point - current_value) / self.T
@@ -123,8 +115,8 @@ class firstOrder:
 
 
 def updatePosition(currentSpeed, currentCap, dicoRobots):
-    D = dicoRobots[i]['D']
-    teta = radians(dicoRobots[i]['teta'])
+    D = dicoRobots['d']
+    teta = radians(dicoRobots['theta'])
     speed = currentSpeed
     cap = currentCap * pi
     if cap > 0 and cap < pi / 2:
@@ -142,28 +134,34 @@ def updatePosition(currentSpeed, currentCap, dicoRobots):
     else:
         signX = 1
         signY = 1
-    dicoRobots[i]['D'] = hypot(
+    dicoRobots['d'] = hypot(
         D * cos(teta) + signX * speed * cos(cap), D * sin(teta) + signY * speed * sin(cap))
-    dicoRobots[i]['teta'] = degrees(
+    dicoRobots['theta'] = degrees(
         atan((D * sin(teta) + signX * speed * sin(cap)) / (D * cos(teta) + signY * speed * cos(cap))))
 
 
-def main(dicoRobots):
+def main(dicoRobots, cap=0):
     # calcule geometriquement les cap et vitesses a atteindre
     # for i in range(len(dicoRobots)):
     currentSpeed = 0
     currentCap = 0
-    teta1 = radians(dicoRobots[i]['tetaSetPoint'])
-    teta2 = radians(dicoRobots[i]['teta'])
-    D1 = dicoRobots[i]['setDistance']
-    D2 = dicoRobots[i]['D']
-    if teta2 > teta1:  # compare teta and tetaSetPoint for the pi/2 shift due to the fact that -pi/2<atan<pi/2
-        angleShift = pi / 2
-    else:
-        angleShift = -pi / 2
-    setCap = degrees(
-        angleShift - atan((D2 * cos(teta2) - D1 * cos(teta1)) / (D2 * sin(teta2) - D1 * sin(teta1)))) / 180
-    setSpeed = hypot((D1 * cos(teta1) - D2 * cos(teta2)), (D1 * sin(teta1) - D2 * sin(teta2))) / maximumSpeed
+    teta1 = radians(dicoRobots.goal_theta_rad)
+    teta2 = radians(dicoRobots.theta_rad)
+    D1 = dicoRobots.goal_d
+    D2 = dicoRobots.d
+    # if teta2 > teta1:  # compare teta and tetaSetPoint for the pi/2 shift due to the fact that -pi/2<atan<pi/2
+    #     angleShift = pi / 2
+    # else:
+    #     angleShift = -pi / 2
+    ######
+    # TODO: Erreur: division par 0
+    ######
+    # setCap = degrees(
+    #     angleShift - atan((D2 * cos(teta2) - D1 * cos(teta1)) / (D2 * sin(teta2) - D1 * sin(teta1)))) / 180
+    distanceToObjective = hypot((D1 * cos(teta1) - D2 * cos(teta2)), (
+        D1 * sin(teta1) - D2 * sin(teta2))) / maximumSpeed
+
+    """
     print('setCap', i, setCap)
     print('speed', i, setSpeed)
     pidForSpeed = PID(0.5, 0.4, 0.5, 10)   # P, I, D
@@ -187,6 +185,60 @@ def main(dicoRobots):
         #time.sleep(0.1)
         N = N - 1
         print(N)
+    """
+    time_out = distanceToObjective * 1.5  # temps laisse au robot pour atteindre l'objectif
+
+    if time_out == 0:
+        return 0, 0
+    else:
+        # si la vitesse est en quart de tours par minute, a verifier pour obtenir correlation
+        angle = pi / 2 / time_out
+
+        # but : faire parcourir un quart de cercle au robot
+        speed = pi / 2 * sqrt(pow(distanceToObjective, 2) / 2) / time_out
+
+        return (angle, speed)  # pour twist: x de linear speed (m/s), z de angular speed (rad/s)
+
+
+import math
+
+
+def min_angle(angle_rad):
+    if angle_rad < -math.pi:
+        return 2*math.pi + angle_rad
+    elif angle_rad > math.pi:
+        return angle_rad - 2*math.pi
+    else:
+        return angle_rad
+
+
+mode_regulation = False
+REGULATION_MIN_ANGLE = math.radians(15)
+REGULATION_TRANSITION_ANGLE = math.radians(45)
+
+
+def bleh(dicoRobots, cap):
+    global mode_regulation
+    ang_spd, lin_spd = 0, 0
+
+    delta_cap = min_angle(dicoRobots.master_theta_rad) - min_angle(cap)
+    delta_theta = min_angle(dicoRobots.theta_rad) - min_angle(dicoRobots.goal_theta_rad)
+
+    # print delta_cap, math.degrees(delta_cap), cap
+
+    mode_regulation = ((mode_regulation or math.fabs(delta_cap) > REGULATION_TRANSITION_ANGLE) and
+                       not math.fabs(delta_cap) < REGULATION_MIN_ANGLE)
+
+    if mode_regulation:
+        ang_spd = delta_cap
+        lin_spd = 0
+    else:
+        ang_spd = delta_theta
+        lin_spd = math.fabs(dicoRobots.d - dicoRobots.goal_d)
+
+    # print ang_spd, lin_spd, mode_regulation
+
+    return ang_spd, lin_spd
 
 if __name__ == '__main__':
     main()

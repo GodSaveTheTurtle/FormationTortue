@@ -12,7 +12,7 @@
 
   <node name="slave1" pkg="formation" type="slave.py" respawn="false" output="screen">
     <param name="name" type="string" value="yellow" />
-    <rosparam param="spawn_position">[8, 5]</rosparam>
+    <rosparam param="spawn_position">[1, 1]</rosparam>
   </node>
 
   <node name="slave2" pkg="formation" type="slave.py" respawn="false" output="screen">
