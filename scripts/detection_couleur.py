@@ -1,6 +1,7 @@
 import rospy
 import cv
 from sensor_msgs.msg import Image
+from data_utils import SlaveData
 from cv_bridge import CvBridge, CvBridgeError
 import math
 
@@ -163,5 +164,11 @@ class ColorTracking(object):
 if __name__ == '__main__':
     # Init du noeud.
     rospy.init_node('kinect_color_tracking', anonymous=True)
-    #ctrack = ColorTracking()
+
+    slaves = {}
+    for slave_name in ['yellow', 'pink']:
+        slaves[slave_name] = SlaveData()
+
+    ctrack = ColorTracking(slaves)
+
     rospy.spin()

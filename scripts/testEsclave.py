@@ -215,9 +215,11 @@ import math
 mode_regulation = False
 REGULATION_MIN_ANGLE = math.radians(15)
 REGULATION_TRANSITION_ANGLE = math.radians(45)
+TOLERANCE_D = 0.15
+K_LIN = 0.5
 
 
-def bleh(dicoRobots, cap):
+def michaelangelo(dicoRobots, cap):
     global mode_regulation
     ang_spd, lin_spd = 0, 0
 
@@ -234,11 +236,41 @@ def bleh(dicoRobots, cap):
         lin_spd = 0
     else:
         ang_spd = delta_theta
-        lin_spd = math.fabs(dicoRobots.d - dicoRobots.goal_d)
+        delta_d = dicoRobots.goal_d - dicoRobots.d
+
+        if math.fabs(delta_d) < TOLERANCE_D:
+            lin_spd = 0
+        else:
+            lin_spd = K_LIN * delta_d
 
     # print ang_spd, lin_spd, mode_regulation
 
     return ang_spd, lin_spd"""
+
+
+def yay_trigo(dicoRobots, cap):
+    theta_e = min_angle(dicoRobots.master_theta_rad - dicoRobots.theta_rad)
+    theta_g = min_angle(dicoRobots.master_theta_rad - dicoRobots.goal_theta_rad)
+
+    a = math.fabs(theta_g * math.cos(dicoRobots.goal_d) - theta_e * math.cos(dicoRobots.d))
+    b = math.fabs(theta_g * math.sin(dicoRobots.goal_d) - theta_e * math.sin(dicoRobots.d))
+
+    theta = math.pi/2 - math.atan2(a, b) - cap
+
+    print a, b
+    print math.degrees(theta), theta
+
+    if math.fabs(theta) < math.radians(45):
+        d = math.hypot(a, b)
+    else:
+        d = 0
+
+    if math.fabs(d) < 1:
+        d = 0
+        theta = min_angle(dicoRobots.master_theta_rad) - min_angle(cap)
+
+    return theta, d
+
 
 if __name__ == '__main__':
     main()

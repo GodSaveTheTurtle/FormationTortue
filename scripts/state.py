@@ -1,3 +1,5 @@
+import math
+
 import rospy
 
 import testFormation
@@ -138,10 +140,14 @@ class Obey(State):
         super(Obey, self).update(commands)
 
         rospy.loginfo('in: %s', commands.slaves[commands.self_color])
-
+        #angle, speed = testEsclave.yay_trigo(commands.slaves[commands.self_color], commands.orientation)
+        #angle, speed = testEsclave.michaelangelo(commands.slaves[commands.self_color], commands.orientation)
         angle, speed = testEsclave.main(commands.slaves[commands.self_color], commands.orientation)
 
         rospy.loginfo('out: {angle: %f, speed: %f}', angle, speed)
 
-        commands.linear_spd = speed
+        # Linear speed of the slave
+        commands.linear_spd = min(speed, 0.5)
+
+        # Angular speed of the slave
         commands.angular_spd = angle
