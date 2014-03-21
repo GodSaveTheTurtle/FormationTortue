@@ -272,5 +272,46 @@ def yay_trigo(dicoRobots, cap):
     return theta, d
 
 
+bleh = False
+
+
+def carbonara(dicoRobots, cap):
+    big_ass_theta, lin_spd = 0, 0
+
+    global bleh
+    if not bleh:
+        bleh = True
+        return 0, 0
+
+    # TODO explications par mickael plus tard
+    delta_theta = min_angle(dicoRobots.theta_rad) - min_angle(dicoRobots.goal_theta_rad)
+
+    d_proj = dicoRobots.d * math.cos(delta_theta)
+    d_haut = dicoRobots.d * math.sin(delta_theta)
+
+    delta_d_proj = math.fabs(dicoRobots.goal_d - d_proj)
+
+    delta_d_obj = math.hypot(delta_d_proj, d_haut)
+
+    theta_obj = min_angle(math.acos(delta_d_proj / delta_d_obj))
+    print 'cap maitre: ', math.degrees(dicoRobots.master_theta_rad)
+    print 'cap esclave: ', math.degrees(cap)
+    print 'theta_obj', math.degrees(theta_obj)
+
+    big_ass_theta = (cap - (dicoRobots.master_theta_rad + dicoRobots.goal_theta_rad) + theta_obj) % (2*math.pi)
+    print 'big_ass_theta', math.degrees(big_ass_theta)
+
+    lin_spd = delta_d_obj
+    ang_spd = big_ass_theta
+
+    if math.fabs(big_ass_theta) > math.radians(90) or delta_d_obj < 0.1:
+        lin_spd = 0
+
+    if math.fabs(big_ass_theta) < math.radians(20):
+        ang_spd = 0
+
+    return ang_spd, 0
+    # return 0, 0
+
 if __name__ == '__main__':
     main()

@@ -6,6 +6,7 @@ from thread_utils import SimpleSubscriber, RosThread
 
 
 class TurtleSimTracker(RosThread):
+    ''' Alternative to using the camera to find the slaves. Uses the appropriate turtlesim topics instead '''
 
     def __init__(self, slave_data):
         super(TurtleSimTracker, self).__init__(1)
@@ -29,26 +30,16 @@ class TurtleSimTracker(RosThread):
         for sn in self.slave_data:
             pose = self.slave_tackers[sn].pose
             if pose:
+                # Distance
                 self.slave_data[sn].d = math.hypot(master_pose.x - pose.x, master_pose.y - pose.y)
-                # self.slave_data[sn].d = math.sqrt((master_pose.x - pose.x)**2 + (master_pose.y - pose.y)**2)
+
+                # Angle with the slave, on the world's referential
                 self.slave_data[sn].theta_rad = math.atan2(pose.y - master_pose.y, pose.x - master_pose.x)
-                # Include the orientation of the master
-                # print (
-                    # self.slave_data[sn].d,
-                    # math.degrees(self.slave_data[sn].theta_rad + master_pose.theta),
-                    # math.degrees(self.slave_data[sn].theta_rad - master_pose.theta)
-                    # math.degrees(self.slave_data[sn].theta_rad),
-                    # math.degrees(master_pose.theta),
-                    # math.degrees((self.slave_data[sn].theta_rad - master_pose.theta) % (2*math.pi)),
-                    # (math.degrees(self.slave_data[sn].theta_rad) - math.degrees(master_pose.theta)) % 360,
-                    # math.degrees((self.slave_data[sn].theta_rad + master_pose.theta) % (2*math.pi))
-                    # (math.degrees(self.slave_data[sn].theta_rad) + math.degrees(master_pose.theta)) % 360
-                # )
+                # Angle difference with the master's orientation
                 self.slave_data[sn].theta_rad = (master_pose.theta - self.slave_data[sn].theta_rad) % (2*math.pi)
 
 
 class PoseSubscriber(SimpleSubscriber):
-
     def __init__(self, name):
         super(PoseSubscriber, self).__init__('/{}/pose'.format(name), Pose)
         self.name = name

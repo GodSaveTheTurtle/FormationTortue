@@ -19,7 +19,8 @@ FormationTortue
 
 ## Structure, exécution
 
-** Newsflash: c'est chiant à faire marcher la com par topics en multi robots. Je vais donc utiliser des sockets et la structure ci-dessous est pas nécessaire. Exécuter les scripts python directement suffira. **
+** Newsflash: c'est chiant à faire marcher la com par topics en multi robots. Je vais donc utiliser des sockets et la structure ci-dessous est pas nécessaire. Exécuter les scripts python directement suffira. Il faut juste initialiser
+correctement les variables en remplaçant les appels à `rospy.get_param()` par l'affectation désirée. (voir fonction `setup()` dans `master.py` et `slave.py`) **
 
 Le code est structuré en package ROS, comme recommandé dans la documentation:
 

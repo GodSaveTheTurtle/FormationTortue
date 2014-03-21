@@ -31,6 +31,8 @@ class MainThread(StateSwitcher):
 
 
 class RemoteControlListener(RosThread):
+    ''' Communication with the android app '''
+
     BUFFER_SIZE = 256
 
     def __init__(self, shared_data):
@@ -124,7 +126,8 @@ def setup():
 
     slaves = rospy.get_param('master/slaves', [])
     shared_data.nb_slaves = len(slaves)
-    shared_data.visible_slaves = len(slaves)  # To disable switch to search mode
+    shared_data.visible_slaves = len(slaves)  # To disable switch to search mode.
+                                              # TODO: set to 0 when search mode works, it will find the slaves itself
 
     for slave_name in slaves:
         shared_data.slaves[slave_name] = SlaveData()

@@ -32,6 +32,7 @@ class SlaveMainThread(StateSwitcher):
 
 
 class MasterListener(RosThread):
+    ''' Blocking wait on the socket with the master. Receives instructions '''
     BUFFER_SIZE = 256
 
     def __init__(self, shared_data, ip):
@@ -87,7 +88,6 @@ if __name__ == '__main__':
             rospy.wait_for_service('spawn')
             spawner = rospy.ServiceProxy('spawn', Spawn)
             spawner(shared_data.spawn_position[0], shared_data.spawn_position[1], 0, shared_data.self_color)
-            # TODO populate virtual slave data
 
         threads = []
         threads.append(SlaveMainThread(shared_data).start())

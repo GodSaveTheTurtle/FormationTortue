@@ -110,6 +110,8 @@ class SimpleSubscriber(object):
 
 
 class OdometrySubscriber(SimpleSubscriber):
+    ''' Updates the robot's orientation '''
+
     def __init__(self, shared_data):
         if shared_data.sim_mode:
             topic = '/{}/pose'.format(shared_data.self_color)
@@ -123,13 +125,14 @@ class OdometrySubscriber(SimpleSubscriber):
     def update(self, data):
         rospy.logdebug('Odometry data: %s', data)
         # TODO read from /odom
-	if self._shared_data.sim_mode:
-        	self._shared_data.orientation = data.theta
-	else:
-        	self._shared_data.orientation = data.pose.pose.orientation.w
-		
+        if self._shared_data.sim_mode:
+            self._shared_data.orientation = data.theta
+        else:
+            self._shared_data.orientation = data.pose.pose.orientation.w
+
 
 class LedController(ThreadedPublisher):
+    ''' Sample publisher. Makes the led color alternate between green, red, orange, off. '''
 
     def __init__(self):
         super(LedController, self).__init__('/mobile_base/commands/led1', Led)
@@ -141,7 +144,7 @@ class LedController(ThreadedPublisher):
 
 
 class DirectionController(ThreadedPublisher):
-
+    ''' Publisher used with our custom command line controller  (unused) '''
     LINEAR_SPD = 0.15
     ANGULAR_SPD = 0.5
 
