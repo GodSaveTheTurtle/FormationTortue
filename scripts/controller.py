@@ -3,6 +3,7 @@ import curses
 
 
 class DirectionalKeyListener:
+    ''' Custom command line controller '''
 
     def __init__(self,
                  direction_mappings=(curses.KEY_UP, curses.KEY_LEFT, curses.KEY_DOWN, curses.KEY_RIGHT),

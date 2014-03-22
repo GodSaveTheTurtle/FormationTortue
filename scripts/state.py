@@ -25,9 +25,13 @@ class State(object):
         pass
 
 
+#####################################################################################################################
 ### Master States
+#####################################################################################################################
 
 class RemoteControlled(State):
+    ''' Standard master state. Controlled from the android app, and sends instructions to all the slaves '''
+
     LIN_SPEED_MULT = 1/500.0  # Multiplier for the linear speed (input is bewteen -100 and +100)
     ANG_SPEED_MULT = 1/75.0  # Multiplier for the angular speed (input is bewteen -100 and +100)
 
@@ -90,6 +94,8 @@ class Obstacle(State):
 
 
 class Search(State):
+    ''' Should rotate on the same spot to locate lost slaves '''
+
     def __init__(self, commands):
         super(Search, self).__init__(commands)
         # TODO stop slaves, send something to the android client
@@ -110,6 +116,11 @@ class Search(State):
 
 
 class Escort(State):
+    '''
+    Once the lost slave is located, commands it to move back to its position in formation, and keeps rotating
+    to keep it visible.
+    '''
+
     def __init__(self, commands):
         super(Escort, self).__init__(commands)
         # TODO send something to the android client
@@ -119,9 +130,12 @@ class Escort(State):
         #TODO command stray slave
 
 
+#####################################################################################################################
 ### Slave States
+#####################################################################################################################
 
 class Wait(State):
+    ''' Stops moving and waits. Used when the master is searching for other slaves '''
     def __init__(self, commands):
         super(Wait, self).__init__(commands)
         # TODO send something to the android client
@@ -132,6 +146,8 @@ class Wait(State):
 
 
 class Obey(State):
+    ''' Slave standard state. Moves according to the received instructions '''
+
     def __init__(self, commands):
         super(Obey, self).__init__(commands)
         # TODO send something to the android client
@@ -142,7 +158,8 @@ class Obey(State):
         rospy.loginfo('in: %s', commands.slaves[commands.self_color])
         #angle, speed = testEsclave.yay_trigo(commands.slaves[commands.self_color], commands.orientation)
         #angle, speed = testEsclave.michaelangelo(commands.slaves[commands.self_color], commands.orientation)
-        angle, speed = testEsclave.main(commands.slaves[commands.self_color], commands.orientation)
+        # angle, speed = testEsclave.main(commands.slaves[commands.self_color], commands.orientation)
+        angle, speed = testEsclave.michaelangelo(commands.slaves[commands.self_color], commands.orientation)
 
         rospy.loginfo('out: {angle: %f, speed: %f}', angle, speed)
 

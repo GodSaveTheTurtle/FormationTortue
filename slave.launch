@@ -1,10 +1,10 @@
 <launch>
-  <!-- Turtlesim Node-->
+  <!-- Starts only slave nodes -->
   <node pkg="turtlesim" type="turtlesim_node" name="sim"/>
   <!--<node pkg="turtlesim" type="turtle_teleop_key" name="tok"/> -->
 
   <param name="sim_mode" type="bool" value="True" />
-<param name="master_ip" value="127.0.0.1" />
+  <param name="master_ip" value="127.0.0.1" />
 
   <node name="slave" pkg="formation" type="slave.py" respawn="false" output="screen">
     <param name="name" type="string" value="yellow" />
