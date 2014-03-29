@@ -156,10 +156,10 @@ class Obey(State):
         super(Obey, self).update(commands)
 
         rospy.loginfo('in: %s', commands.slaves[commands.self_color])
-        #angle, speed = testEsclave.yay_trigo(commands.slaves[commands.self_color], commands.orientation)
-        #angle, speed = testEsclave.michaelangelo(commands.slaves[commands.self_color], commands.orientation)
-        # angle, speed = testEsclave.main(commands.slaves[commands.self_color], commands.orientation)
-        angle, speed = testEsclave.michaelangelo(commands.slaves[commands.self_color], commands.orientation)
+        #angle, speed = testEsclave.trigonometrique_bis(commands.slaves[commands.self_color], commands.orientation)
+        #angle, speed = testEsclave.deterministe(commands.slaves[commands.self_color], commands.orientation)
+        # angle, speed = testEsclave.deterministe_bis(commands.slaves[commands.self_color], commands.orientation)
+        angle, speed = testEsclave.deterministe_bis(commands.slaves[commands.self_color], commands.orientation)
 
         rospy.loginfo('out: {angle: %f, speed: %f}', angle, speed)
 
