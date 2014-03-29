@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from math import cos, sin, hypot, atan, degrees, radians, pi, copysign, sqrt, pow
+import math
 
 # The recipe gives simple implementation of a Discrete Proportional-Integral-Derivative (PID) controller.
 # PID controller gives output value for error between desired reference input and measurement feedback to
@@ -19,13 +20,18 @@ from math import cos, sin, hypot, atan, degrees, radians, pi, copysign, sqrt, po
 #
 #
 
-maximumSpeed = 10
+maximumSpeed = 2  # définition en global de la vitesse linéaire maximale
+
+# le PID devait aussi servir pour affiner le contrôle de trajectoire et de la vitesse :
+# les consignes sont obtenues du main() sous forme de cap et de vitesse,
+# et les commandes sont obtenues grâce au correcteur sous forme de vitesses angulaires et linéaires
+# Elles devaient êtres envoyées sous forme de messages Twist au turtlebot
 
 
 class PID:
 
     def __init__(self, P=2.0, I=0.0, D=1.0, PIDMax=5, Derivator=0,
-                 Integrator=0, Integrator_max=500, Integrator_min=-500):
+                 Integrator=0, Integrator_max=500, Integrator_min=-500):  # définition des paramètres du PID
         self.Kp = P
         self.Ki = I
         self.Kd = D
@@ -37,7 +43,7 @@ class PID:
         self.set_point = 0.0
         self.error = 0.0
 
-    def update(self, current_value):
+    def update(self, current_value):  # réactualisation de la consigne en fonction de l'erreur et des paramètres du pid
         self.error = self.set_point - current_value
         self.P_value = self.Kp * self.error
         self.D_value = self.Kd * (self.error - self.Derivator)
@@ -53,50 +59,39 @@ class PID:
             PID = self.PIDMax
         return PID
 
-    def setPoint(self, set_point):
+    def setPoint(self, set_point):   # définition de la consigne de vitesse ou de cap à atteindre
         self.set_point = set_point
-        print('cap was set to', set_point)
+        print('cap/speed was set to', set_point)
         self.Integrator = 0
         self.Derivator = 0
 
-    def setIntegrator(self, Integrator):
+    def setIntegrator(self, Integrator):  # définition de la grandeur d'intégration
         self.Integrator = Integrator
 
-    def setDerivator(self, Derivator):
+    def setDerivator(self, Derivator):  # définition de la grandeur de dérivation
         self.Derivator = Derivator
 
-    def setKp(self, P):
+    def setKp(self, P):  # définition du coefficient proportionnel
         self.Kp = P
 
-    def setKi(self, I):
+    def setKi(self, I):  # définition du coefficient d'intégration
         self.Ki = I
 
-    def setKd(self, D):
+    def setKd(self, D):  # définition du coefficient de dérivation
         self.Kd = D
 
-    def getPoint(self):
-        return self.set_point
 
-    def getError(self):
-        return self.error
-
-    def getIntegrator(self):
-        return self.Integrator
-
-    def getDerivator(self):
-        return self.Derivator
-
-
-class firstOrder:
+class firstOrder:   # en vue de simuler le processus régulé par le correcteur sans utiliser turtle_sim
 
     def __init__(self, G=0.5, T=100, maxF=5):
-        self.G = G
-        self.T = T
-        self.set_point = 0.0
-        self.error = 0.0
-        self.maxFlow = maxF
+        self.G = G  # gain statique
+        self.T = T  # constante de temps
+        self.set_point = 0.0  # initialisation à 0 de la variable de sortie
+        self.error = 0.0  # mise à 0 de la variable d'entree ou de l'erreur
+        self.maxFlow = maxF  # valeur de saturation de la grandeur de sortie (angle ou vitesse)
 
     def update(self, current_value):
+    # mise à jour de la valeur en sortie du procédé en fonction des valeurs en entrée et des paramètres
         flowMeasured = current_value + \
             (self.set_point - current_value) * self.G + (self.set_point - current_value) / self.T
         if abs(flowMeasured) > self.maxFlow:
@@ -104,6 +99,7 @@ class firstOrder:
         return flowMeasured
 
     def setPoint(self, set_point):
+    # définit une consignau procédé : on lui envoie la sortie du correcteur pour faire un système bouclé
         self.set_point = set_point
         print('fvalue was set to', set_point)
 
@@ -114,33 +110,7 @@ class firstOrder:
         return self.set_point
 
 
-def updatePosition(currentSpeed, currentCap, dicoRobots):
-    D = dicoRobots['d']
-    teta = radians(dicoRobots['theta'])
-    speed = currentSpeed
-    cap = currentCap * pi
-    if cap > 0 and cap < pi / 2:
-        signX = -1
-        signY = 1
-    elif cap > 0 and cap > pi / 2:
-        signX = -1
-        signY = 1
-    elif cap < 0 and cap < pi / 2:
-        signX = -1
-        signY = 1
-    elif cap < 0 and cap > pi / 2:
-        signX = -1
-        signY = 1
-    else:
-        signX = 1
-        signY = 1
-    dicoRobots['d'] = hypot(
-        D * cos(teta) + signX * speed * cos(cap), D * sin(teta) + signY * speed * sin(cap))
-    dicoRobots['theta'] = degrees(
-        atan((D * sin(teta) + signX * speed * sin(cap)) / (D * cos(teta) + signY * speed * cos(cap))))
-
-
-def min_angle(angle_rad):
+def min_angle(angle_rad):    # permet de travailler avec des angles normalisé [-pi;pi]
     if angle_rad < -pi:
         return 2 * pi + angle_rad
     elif angle_rad > pi:
@@ -149,9 +119,50 @@ def min_angle(angle_rad):
         return angle_rad
 
 
-def main(dicoRobots, cap=0):
+def deterministe_bis(dicoRobots, cap=0):
     # calcule geometriquement les cap et vitesses a atteindre
     # for i in range(len(dicoRobots)):
+    angle = 0
+    speed = 0
+    master_cap = min_angle(dicoRobots.master_theta_rad)
+    theta_obj = min_angle(min_angle(dicoRobots.goal_theta_rad) + master_cap)
+    theta_esclave = min_angle(min_angle(dicoRobots.theta_rad) + master_cap)
+    D_goal = dicoRobots.goal_d
+    D_esclave = dicoRobots.d
+    cap = min_angle(cap)
+    if (theta_obj - theta_esclave) > 0:  # cap esclave trop élevé (=angle de dérive positif)
+        if D_esclave > D_goal:
+            angle_to_objective = master_cap - 3 * pi / 4  # le cap est déterminé selon quatre cas
+        else:
+            angle_to_objective = master_cap - pi / 4
+    else:
+        if D_esclave > D_goal:
+            angle_to_objective = master_cap + 3 * pi / 4
+        else:
+            angle_to_objective = master_cap + pi / 4
+    print('capmaitr', degrees(master_cap), 'theta_obj', degrees(theta_obj), 'theta_esc', degrees(theta_esclave))
+    X_projection = D_goal * cos(theta_obj) - D_esclave * cos(theta_esclave)
+    Y_projection = D_goal * sin(theta_obj) - D_esclave * sin(theta_esclave)
+    distanceToObjective = hypot(X_projection, Y_projection)
+    # vitesse en rad/s
+    # cap: cap actuel, angle_to_ohjective = cap à atteindre
+    if abs(cap - min_angle(angle_to_objective)) < 0.5:  # condition pour avoir une vitesse non nulle
+        speed = distanceToObjective / 2  # vitesse non nulle car le cap à obtenir est suffisament proche du cap actuel
+    else:  # cap à obtenir tro éligné : on pivote sans avancer
+        if angle_to_objective > 0 and distanceToObjective > 0.5:
+            angle = abs(cap - min_angle(angle_to_objective)) / 2  # moitié du delta entre cap actuel et
+        elif angle_to_objective < 0 and distanceToObjective > 0.5:
+            angle = -abs(cap - min_angle(angle_to_objective)) / 2
+        speed = 0
+         # angle objectif presque atteint : on peut avancer
+    print('angle2obj:', degrees(angle_to_objective), 'capEsc', degrees(cap))
+    print(dicoRobots)
+    print('angle', degrees(angle), 'speed', speed)
+    print('distance2obj', distanceToObjective)
+    return (angle, speed)  # pour twist: x de linear speed (m/s), z de angular speed (rad/s)
+
+
+def trigonometrique(dicoRobots, cap=0):
     angle = 0
     speed = 0
     master_cap = dicoRobots.master_theta_rad
@@ -159,20 +170,6 @@ def main(dicoRobots, cap=0):
     theta_esclave = dicoRobots.theta_rad - master_cap
     D_goal = dicoRobots.goal_d
     D_esclave = dicoRobots.d
-    print ('capmaitr', degrees(master_cap), 'theta_obj', degrees(theta_obj), 'theta_esc', degrees(theta_esclave))
-
-    # if theta_obj > theta_esclave:  # compare teta and tetaSetPoint for the pi/2 shift due to the fact that -pi/2<atan<pi/2
-    #     angleShift = pi / 2
-    # else:
-    #     angleShift = -pi / 2
-    #
-    # TODO: Erreur: division par 0
-    #
-    # setCap = degrees(
-    # angleShift - atan((D_goal * cos(theta_obj) - D_esclave *
-    # cos(theta_esclave)) / (D_goal * sin(theta_obj) - D_esclave *
-    # sin(theta_esclave)))) / 180
-
     distanceToObjective = hypot((D_goal * sin(theta_obj) - D_esclave * sin(theta_esclave)), (
         D_goal * cos(theta_obj) - D_esclave * cos(theta_esclave)))
     X_projection = D_goal * cos(theta_obj) - D_esclave * cos(theta_esclave)
@@ -189,7 +186,6 @@ def main(dicoRobots, cap=0):
 
         #angle_to_objective = (copysign(Y_projection, 1) * (pi - atan(Y_projection / -X_projection))) % (2 * pi)
     time_out = distanceToObjective * 3  # temps laisse au robot pour atteindre l'objectif
-
         # vitesse en rad/s
     if abs(cap - angle_to_objective) < 0.5:
         speed = distanceToObjective / 4
@@ -206,11 +202,6 @@ def main(dicoRobots, cap=0):
     print('distance2obj', distanceToObjective)
     return (angle, speed)  # pour twist: x de linear speed (m/s), z de angular speed (rad/s)
 
-"""
-import math
-
-
-
 
 mode_regulation = False
 REGULATION_MIN_ANGLE = math.radians(15)
@@ -219,7 +210,7 @@ TOLERANCE_D = 0.15
 K_LIN = 0.5
 
 
-def michaelangelo(dicoRobots, cap):
+def deterministe(dicoRobots, cap):
     global mode_regulation
     ang_spd, lin_spd = 0, 0
 
@@ -245,17 +236,17 @@ def michaelangelo(dicoRobots, cap):
 
     # print ang_spd, lin_spd, mode_regulation
 
-    return ang_spd, lin_spd"""
+    return ang_spd, lin_spd  # renvoi des consignes de vitesse
 
 
-def yay_trigo(dicoRobots, cap):
-    theta_e = min_angle(dicoRobots.master_theta_rad - dicoRobots.theta_rad)
-    theta_g = min_angle(dicoRobots.master_theta_rad - dicoRobots.goal_theta_rad)
+def trigonometrique_bis(dicoRobots, cap):  # deuxième tentative de résolution par calcul trigonométrique
+    theta_e = min_angle(dicoRobots.master_theta_rad - dicoRobots.theta_rad)  # angle vers esclave
+    theta_g = min_angle(dicoRobots.master_theta_rad - dicoRobots.goal_theta_rad)  # angle vers objectif
 
-    a = math.fabs(theta_g * math.cos(dicoRobots.goal_d) - theta_e * math.cos(dicoRobots.d))
-    b = math.fabs(theta_g * math.sin(dicoRobots.goal_d) - theta_e * math.sin(dicoRobots.d))
+    a = math.fabs(dicoRobots.goal_d * math.cos(theta_g) - dicoRobots.d * math.cos(theta_e))
+    b = math.fabs(dicoRobots.goal_d * math.sin(theta_g) - dicoRobots.d * math.sin(theta_e))
 
-    theta = math.pi/2 - math.atan2(a, b) - cap
+    theta = math.pi / 2 - math.atan2(a, b) - cap
 
     print a, b
     print math.degrees(theta), theta
@@ -269,7 +260,7 @@ def yay_trigo(dicoRobots, cap):
         d = 0
         theta = min_angle(dicoRobots.master_theta_rad) - min_angle(cap)
 
-    return theta, d
+    return theta, d # renvoi du theta pour application en consignes de vitesse
 
 
 if __name__ == '__main__':
